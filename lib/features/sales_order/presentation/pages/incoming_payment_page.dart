@@ -1431,14 +1431,23 @@ class _IncomingCustomerDialogState extends State<_IncomingCustomerDialog> {
     final pageNumber = append ? (_customers.length ~/ _odbcPageSize) + 1 : 1;
     final searchForApi = append ? _lastSearch : _normalizedSearch();
 
+    final salesEmployeeCode = context
+        .read<AuthCubit>()
+        .state
+        .loginResponse
+        ?.user
+        .sapSalesEmployeeCode;
+
     try {
-      // Match Swagger: search + activeOnly + skip/take + scope=2 (no salesEmpCode).
+      // Match Swagger: search + activeOnly + skip/take + scope=2 + salesEmpCode
+      // for the logged-in user.
       final list = await _getCustomersUseCase(
         search: searchForApi,
         pageNumber: pageNumber,
         pageSize: _odbcPageSize,
         activeOnly: true,
         scope: CustomerOdbcScope.all,
+        salesEmployeeCode: salesEmployeeCode,
       );
       if (!mounted) return;
       final mapped = list

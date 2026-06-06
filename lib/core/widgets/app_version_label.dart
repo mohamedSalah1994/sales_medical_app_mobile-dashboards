@@ -16,7 +16,7 @@ class AppVersionLabel extends StatefulWidget {
 class _AppVersionLabelState extends State<AppVersionLabel> {
   /// Fallback shown before the native plugin loads (or if it is unavailable).
   /// Keep in sync with the `version:` field in pubspec.yaml.
-  static const String _fallback = 'v1.0.0 (1)';
+  static const String _fallback = 'v1.0.2';
 
   static String? _cached;
   late String _version;

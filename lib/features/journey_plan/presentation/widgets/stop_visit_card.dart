@@ -436,28 +436,73 @@ class _VisitSection extends StatelessWidget {
   final bool hideTimerAndButtonsForPastVisit;
 
   Future<void> _getLocationAndCheckIn(BuildContext context) async {
-    double? latitude;
-    double? longitude;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    _showBlockingLoader(context, message: 'Starting visit...');
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (serviceEnabled) {
-        var permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied) {
-          permission = await Geolocator.requestPermission();
+      double? latitude;
+      double? longitude;
+      try {
+        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (serviceEnabled) {
+          var permission = await Geolocator.checkPermission();
+          if (permission == LocationPermission.denied) {
+            permission = await Geolocator.requestPermission();
+          }
+          if (permission == LocationPermission.whileInUse ||
+              permission == LocationPermission.always) {
+            final position = await Geolocator.getCurrentPosition();
+            latitude = position.latitude;
+            longitude = position.longitude;
+          }
         }
-        if (permission == LocationPermission.whileInUse ||
-            permission == LocationPermission.always) {
-          final position = await Geolocator.getCurrentPosition();
-          latitude = position.latitude;
-          longitude = position.longitude;
-        }
-      }
-    } catch (_) {}
-    if (!context.mounted) return;
-    await context.read<JourneyPlanCubit>().checkInVisit(
-      visit.id,
-      latitude: latitude,
-      longitude: longitude,
+      } catch (_) {}
+      if (!context.mounted) return;
+      await context.read<JourneyPlanCubit>().checkInVisit(
+        visit.id,
+        latitude: latitude,
+        longitude: longitude,
+      );
+    } finally {
+      if (navigator.canPop()) navigator.pop();
+    }
+  }
+
+  void _showBlockingLoader(BuildContext context, {required String message}) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      useRootNavigator: true,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

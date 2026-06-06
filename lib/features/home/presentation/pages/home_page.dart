@@ -1001,7 +1001,7 @@ class _HomeViewState extends State<_HomeView> {
     return BottomNavigationBar(
       currentIndex: _selectedIndex == 14 ? 4 : (_selectedIndex > 3 ? 0 : _selectedIndex),
       onTap: (index) {
-        _onItemTapped(index);
+        _onItemTapped(navItems[index].index);
       },
       type: BottomNavigationBarType.fixed,
       selectedItemColor: AppColors.primary,

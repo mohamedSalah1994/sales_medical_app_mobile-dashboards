@@ -162,17 +162,20 @@ class _AppViewState extends State<_AppView> with WidgetsBindingObserver {
   /// On a 401, silently log the user out and return to login — no dialog,
   /// no message.
   void _handleUnauthorizedSilently() {
-    final ctx = widget.navigatorKey.currentContext;
-    if (ctx == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!ctx.mounted) return;
-      await ctx.read<AuthCubit>().logout();
-      sl<ApiService>().resetUnauthorizedHandling();
-      if (ctx.mounted) {
-        Navigator.of(ctx).pushNamedAndRemoveUntil(
+      try {
+        final ctx = widget.navigatorKey.currentContext;
+        if (ctx != null && ctx.mounted) {
+          await ctx.read<AuthCubit>().logout();
+        }
+        widget.navigatorKey.currentState?.pushNamedAndRemoveUntil(
           AppRoutes.login,
           (route) => false,
         );
+      } finally {
+        // Always re-arm so a later 401 can redirect again, even if logout or
+        // navigation above failed (e.g. navigator not ready yet).
+        sl<ApiService>().resetUnauthorizedHandling();
       }
     });
   }
