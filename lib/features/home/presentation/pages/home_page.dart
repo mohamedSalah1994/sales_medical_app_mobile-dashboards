@@ -150,25 +150,6 @@ class _HomeViewState extends State<_HomeView> {
     if (userId == null) return;
 
     switch (tabIndex) {
-      case 0: // Home - Load both journeys and targets
-        final journeyCubit = context.read<JourneyPlanCubit>();
-        final targetsCubit = context.read<TargetsCubit>();
-        final authState = context.read<AuthCubit>().state;
-        final user = authState.loginResponse?.user;
-        final isSalesRep = user?.role.toLowerCase() == 'salesrep';
-        final isSupervisor = user?.role.toLowerCase() == 'supervisor';
-        journeyCubit.loadJourneyPlans(userId: userId);
-        if (isSupervisor) {
-          journeyCubit.loadVisits(supervisorId: userId);
-        }
-        // For SalesRep, send userId; for others, send createdById
-        if (isSalesRep) {
-          targetsCubit.loadTargets(userId: userId);
-          context.read<WalletCubit>().loadWallet();
-        } else {
-          targetsCubit.loadTargets(createdById: userId);
-        }
-        break;
       case 2: // Journey Plans
         final cubit = context.read<JourneyPlanCubit>();
         cubit.loadJourneyPlans(userId: userId);
@@ -191,8 +172,6 @@ class _HomeViewState extends State<_HomeView> {
         context.read<TeamLocationsCubit>().fetchTeamLocations();
         break;
       case 12:
-        break;
-      case 14:
         break;
     }
   }
@@ -547,7 +526,7 @@ class _HomeViewState extends State<_HomeView> {
     final isSalesRep = role == 'salesrep';
     final pageTitle =
         _selectedIndex == 0
-            ? l10n.home
+            ? l10n.dashboard
             : _selectedIndex == 1
             ? l10n.settings
             : _selectedIndex == 2
@@ -574,9 +553,7 @@ class _HomeViewState extends State<_HomeView> {
             ? 'Incoming payment'
             : _selectedIndex == 13
             ? 'Reports'
-            : _selectedIndex == 14
-            ? 'Dashboard'
-            : l10n.home;
+            : l10n.dashboard;
 
     return AppBar(
       leading: IconButton(
@@ -967,9 +944,9 @@ class _HomeViewState extends State<_HomeView> {
   Widget _buildBottomNavigationBar(BuildContext context) {
     final List<_NavItem> navItems = [
       _NavItem(
-        icon: Icons.home_outlined,
-        activeIcon: Icons.home,
-        label: AppLocalizations.of(context)!.home,
+        icon: Icons.dashboard_outlined,
+        activeIcon: Icons.dashboard,
+        label: AppLocalizations.of(context)!.dashboard,
         index: 0,
       ),
       _NavItem(
@@ -990,16 +967,10 @@ class _HomeViewState extends State<_HomeView> {
         label: AppLocalizations.of(context)!.targets,
         index: 3,
       ),
-      _NavItem(
-        icon: Icons.leaderboard_outlined,
-        activeIcon: Icons.leaderboard,
-        label: 'Dashboard',
-        index: 14,
-      ),
     ];
 
     return BottomNavigationBar(
-      currentIndex: _selectedIndex == 14 ? 4 : (_selectedIndex > 3 ? 0 : _selectedIndex),
+      currentIndex: _selectedIndex > 3 ? 0 : _selectedIndex,
       onTap: (index) {
         _onItemTapped(navItems[index].index);
       },

@@ -958,6 +958,38 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
     }
   }
 
+  /// Current running elapsed seconds for [visitId] exactly as the live timer
+  /// renders it. Prefers the active snapshot maps (activeElapsed + time since
+  /// snapshot) so the value is carried forward and never collapses to ~0 just
+  /// because a freshly reloaded server `actualStartDateTime` is missing or
+  /// close to "now" (which happens after navigating into a visit).
+  int _currentRunningElapsedSeconds(
+    String visitId, {
+    Visit? visit,
+    DateTime? now,
+  }) {
+    final clock = now ?? DateTime.now();
+    final activeElapsed = state.activeVisitElapsedSeconds[visitId];
+    final activeSnapshot = state.activeVisitSnapshotTimestampMs[visitId];
+    if (activeElapsed != null && activeSnapshot != null) {
+      final delta =
+          (clock.millisecondsSinceEpoch - activeSnapshot) ~/ 1000;
+      final sec = activeElapsed + delta;
+      return sec > 0 ? sec : 0;
+    }
+    final start =
+        _effectiveVisitStartForTiming(
+          visit,
+          visitId,
+          state.actualStartTimestampMs,
+        ) ??
+        _restoredActualStartFor(visitId);
+    if (start == null) return 0;
+    final totalPaused = state.totalPausedDurationSeconds[visitId] ?? 0;
+    final sec = clock.difference(start).inSeconds - totalPaused;
+    return sec > 0 ? sec : 0;
+  }
+
   int _computeActualDurationSeconds(Visit visit, {DateTime? endAt}) {
     return visitCheckoutElapsedSeconds(
       visit: visit,
@@ -997,13 +1029,26 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
           visit.actualStartDateTime ?? _restoredActualStartFor(visit.id);
       if (effectiveStart != null) {
         actualStartMap[visit.id] = effectiveStart.millisecondsSinceEpoch;
-        if (visit.status == 2) {
-          final totalPaused = state.totalPausedDurationSeconds[visit.id] ?? 0;
-          final elapsed =
-              now.difference(effectiveStart).inSeconds - totalPaused;
-          activeElapsedMap[visit.id] = elapsed > 0 ? elapsed : 0;
-          activeSnapshotMap[visit.id] = now.millisecondsSinceEpoch;
-        }
+      }
+      // A paused visit's timer must stay frozen — its value lives in
+      // pausedVisitElapsedSeconds, so never re-stamp its active snapshot.
+      final isPaused = VisitExecutionStatus.isVisitPausedFromTiming(
+        visit,
+        pausedVisitElapsedSeconds: state.pausedVisitElapsedSeconds,
+        pauseStartTimestampMs: state.pauseStartTimestampMs,
+        endedVisitElapsedSeconds: state.endedVisitElapsedSeconds,
+      );
+      if (visit.status == 2 && !isPaused) {
+        // Carry the live value forward from the existing snapshot maps instead
+        // of recomputing from the start, so a missing/near-now reloaded start
+        // can never reset the running timer to ~0.
+        final elapsed = _currentRunningElapsedSeconds(
+          visit.id,
+          visit: visit,
+          now: now,
+        );
+        activeElapsedMap[visit.id] = elapsed;
+        activeSnapshotMap[visit.id] = now.millisecondsSinceEpoch;
       }
     }
 
@@ -1532,8 +1577,13 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
         );
         if (start != null) {
           newActualStart[visitId] = start.millisecondsSinceEpoch;
-          final totalPaused = newTotalPaused[visitId] ?? 0;
-          final elapsed = now.difference(start).inSeconds - totalPaused;
+          // Freeze at the value the live timer is showing (carried forward from
+          // the snapshot maps) so it can't reset to ~0 on a stale start.
+          final elapsed = _currentRunningElapsedSeconds(
+            visitId,
+            visit: visitForTiming,
+            now: now,
+          );
           newPaused[visitId] = elapsed.clamp(0, 1 << 30);
           newPauseStart[visitId] = now.millisecondsSinceEpoch;
           newActiveElapsed.remove(visitId);
@@ -3110,39 +3160,12 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
     emit(state.copyWith(planViewFilter: filter));
   }
 
-  /// Returns true if there is another visit (excluding [excludeVisitId]) that is
-  /// currently ongoing (status == 2 Started). Starting a new visit is only
-  /// allowed when the other visit is paused (3) or closed (4).
-  bool _hasOngoingVisitOtherThan(String excludeVisitId) {
-    final fromStops =
-        state.journeyPlan?.stops
-            .map((s) => s.visit)
-            .whereType<Visit>()
-            .toList() ??
-        <Visit>[];
-    final allVisits = <Visit>[...fromStops, ...state.visits];
-    return allVisits.any((v) {
-      if (v.id == excludeVisitId) return false;
-      // Ongoing = Started (2). Paused = 3, Closed = 4, Canceled = 5.
-      return v.status == 2;
-    });
-  }
-
   Future<void> startVisit(
     String visitId, {
     double? latitude,
     double? longitude,
   }) async {
     if (isClosed) return;
-    if (_hasOngoingVisitOtherThan(visitId)) {
-      emit(
-        state.copyWith(
-          errorMessage:
-              'Another visit is still in progress. Pause or end it before starting a new one.',
-        ),
-      );
-      return;
-    }
     final online = await connectivityService.isOnline;
     if (!online) {
       await _applyOfflineVisitAction(
@@ -3367,15 +3390,6 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
     double? longitude,
   }) async {
     if (isClosed) return;
-    if (_hasOngoingVisitOtherThan(visitId)) {
-      emit(
-        state.copyWith(
-          errorMessage:
-              'Another visit is still in progress. Pause or end it before starting a new one.',
-        ),
-      );
-      return;
-    }
     final online = await connectivityService.isOnline;
     if (!online) {
       await _applyOfflineVisitAction(
@@ -3942,25 +3956,21 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
 
         if (!isClosed) {
           await localDataSource.saveCachedCurrentPlan(optimisticPlan);
-          int? effectiveElapsedSec;
           DateTime? actualStart = visitFromState?.actualStartDateTime;
           for (final stop in currentPlan.stops) {
             if (stop.visit?.id == visitId &&
                 stop.visit?.actualStartDateTime != null) {
               actualStart = stop.visit!.actualStartDateTime;
-              final totalPaused =
-                  state.totalPausedDurationSeconds[visitId] ?? 0;
-              effectiveElapsedSec =
-                  DateTime.now().difference(actualStart!).inSeconds -
-                  totalPaused;
               break;
             }
           }
-          if (effectiveElapsedSec == null && actualStart != null) {
-            final totalPaused = state.totalPausedDurationSeconds[visitId] ?? 0;
-            effectiveElapsedSec =
-                DateTime.now().difference(actualStart).inSeconds - totalPaused;
-          }
+          // Freeze the timer at exactly what it currently shows by carrying the
+          // value forward from the live snapshot. This keeps the paused value
+          // correct even when the server-reloaded start is missing/near-now.
+          final int effectiveElapsedSec = _currentRunningElapsedSeconds(
+            visitId,
+            visit: visitFromState,
+          );
           final newPaused = Map<String, int>.from(
             state.pausedVisitElapsedSeconds,
           );
@@ -3970,6 +3980,14 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
           final newActualStart = Map<String, int>.from(
             state.actualStartTimestampMs,
           );
+          // While paused the live timer must stop ticking, so clear the active
+          // snapshot maps (the paused value lives in pausedVisitElapsedSeconds).
+          final newActiveElapsed = Map<String, int>.from(
+            state.activeVisitElapsedSeconds,
+          )..remove(visitId);
+          final newActiveSnapshot = Map<String, int>.from(
+            state.activeVisitSnapshotTimestampMs,
+          )..remove(visitId);
           final effectiveStartForTimer =
               actualStart ??
               visitFromState?.actualStartDateTime ??
@@ -3978,10 +3996,8 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
             newActualStart[visitId] =
                 effectiveStartForTimer.millisecondsSinceEpoch;
           }
-          if (effectiveElapsedSec != null) {
-            newPaused[visitId] = effectiveElapsedSec.clamp(0, 1 << 30);
-            newPauseStart[visitId] = DateTime.now().millisecondsSinceEpoch;
-          }
+          newPaused[visitId] = effectiveElapsedSec.clamp(0, 1 << 30);
+          newPauseStart[visitId] = DateTime.now().millisecondsSinceEpoch;
           final updatedVisit = updatedStops
               .map((stop) => stop.visit)
               .whereType<VisitModel>()
@@ -3999,6 +4015,8 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
               pausedVisitElapsedSeconds: newPaused,
               pauseStartTimestampMs: newPauseStart,
               actualStartTimestampMs: newActualStart,
+              activeVisitElapsedSeconds: newActiveElapsed,
+              activeVisitSnapshotTimestampMs: newActiveSnapshot,
               clearError: true,
             ),
           );
@@ -4007,6 +4025,8 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
             pauseStartTimestampMs: newPauseStart,
             totalPausedDurationSeconds: state.totalPausedDurationSeconds,
             actualStartTimestampMs: newActualStart,
+            activeVisitElapsedSeconds: newActiveElapsed,
+            activeVisitSnapshotTimestampMs: newActiveSnapshot,
           );
         }
       } else {
@@ -4014,14 +4034,12 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
           final idx = state.visits.indexWhere((v) => v.id == visitId);
           if (idx >= 0) {
             final visit = state.visits[idx];
-            final totalPaused = state.totalPausedDurationSeconds[visitId] ?? 0;
-            final effectiveElapsedSec =
-                visit.actualStartDateTime != null
-                    ? DateTime.now()
-                            .difference(visit.actualStartDateTime!)
-                            .inSeconds -
-                        totalPaused
-                    : null;
+            // Freeze at the live value (carried forward from the snapshot maps)
+            // so navigating in before pausing can't reset the stored elapsed.
+            final effectiveElapsedSec = _currentRunningElapsedSeconds(
+              visitId,
+              visit: visit,
+            );
             final updatedVisit = VisitModel(
               id: visit.id,
               userId: visit.userId,
@@ -4060,14 +4078,18 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
             final newActualStart = Map<String, int>.from(
               state.actualStartTimestampMs,
             );
+            final newActiveElapsed = Map<String, int>.from(
+              state.activeVisitElapsedSeconds,
+            )..remove(visitId);
+            final newActiveSnapshot = Map<String, int>.from(
+              state.activeVisitSnapshotTimestampMs,
+            )..remove(visitId);
             if (visit.actualStartDateTime != null) {
               newActualStart[visitId] =
                   visit.actualStartDateTime!.millisecondsSinceEpoch;
             }
-            if (effectiveElapsedSec != null) {
-              newPaused[visitId] = effectiveElapsedSec.clamp(0, 1 << 30);
-              newPauseStart[visitId] = DateTime.now().millisecondsSinceEpoch;
-            }
+            newPaused[visitId] = effectiveElapsedSec.clamp(0, 1 << 30);
+            newPauseStart[visitId] = DateTime.now().millisecondsSinceEpoch;
             emit(
               state.copyWith(
                 isLoading: false,
@@ -4075,6 +4097,8 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
                 pausedVisitElapsedSeconds: newPaused,
                 pauseStartTimestampMs: newPauseStart,
                 actualStartTimestampMs: newActualStart,
+                activeVisitElapsedSeconds: newActiveElapsed,
+                activeVisitSnapshotTimestampMs: newActiveSnapshot,
                 clearError: true,
               ),
             );
@@ -4083,6 +4107,8 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
               pauseStartTimestampMs: newPauseStart,
               totalPausedDurationSeconds: state.totalPausedDurationSeconds,
               actualStartTimestampMs: newActualStart,
+              activeVisitElapsedSeconds: newActiveElapsed,
+              activeVisitSnapshotTimestampMs: newActiveSnapshot,
             );
           } else {
             emit(state.copyWith(isLoading: false, clearError: true));
@@ -4308,6 +4334,22 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
             visitId,
             updatedVisit,
           );
+          // Continue the running timer from the paused value (e.g. paused at
+          // 10s resumes at 10s → 11s …). The live timer prefers these active
+          // maps, so reset the snapshot to "now" with the paused elapsed.
+          final newActiveElapsed = Map<String, int>.from(
+            state.activeVisitElapsedSeconds,
+          );
+          final newActiveSnapshot = Map<String, int>.from(
+            state.activeVisitSnapshotTimestampMs,
+          );
+          if (pausedElapsedSec != null) {
+            newActiveElapsed[visitId] = pausedElapsedSec.clamp(0, 1 << 30);
+            newActiveSnapshot[visitId] = DateTime.now().millisecondsSinceEpoch;
+          } else {
+            newActiveElapsed.remove(visitId);
+            newActiveSnapshot.remove(visitId);
+          }
           await localDataSource.saveCachedCurrentPlan(resumedPlan);
           await localDataSource.saveCachedVisits(
             newVisits.map((visit) => visit as VisitModel).toList(),
@@ -4321,6 +4363,8 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
               pauseStartTimestampMs: newPauseStart,
               totalPausedDurationSeconds: newTotalPaused,
               actualStartTimestampMs: newActualStart,
+              activeVisitElapsedSeconds: newActiveElapsed,
+              activeVisitSnapshotTimestampMs: newActiveSnapshot,
               clearError: true,
             ),
           );
@@ -4329,6 +4373,8 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
             pauseStartTimestampMs: newPauseStart,
             totalPausedDurationSeconds: newTotalPaused,
             actualStartTimestampMs: newActualStart,
+            activeVisitElapsedSeconds: newActiveElapsed,
+            activeVisitSnapshotTimestampMs: newActiveSnapshot,
           );
         }
       } else {
@@ -4407,6 +4453,23 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
               newActualStart[visitId] = adjustedStart.millisecondsSinceEpoch;
               resumedVisit = _copyVisitWithStart(updatedVisit, adjustedStart);
             }
+            // Continue the running timer from the paused value (e.g. paused at
+            // 10s resumes at 10s → 11s …). The live timer prefers these active
+            // maps, so reset the snapshot to "now" with the paused elapsed.
+            final newActiveElapsed = Map<String, int>.from(
+              state.activeVisitElapsedSeconds,
+            );
+            final newActiveSnapshot = Map<String, int>.from(
+              state.activeVisitSnapshotTimestampMs,
+            );
+            if (pausedElapsedSec != null) {
+              newActiveElapsed[visitId] = pausedElapsedSec.clamp(0, 1 << 30);
+              newActiveSnapshot[visitId] =
+                  DateTime.now().millisecondsSinceEpoch;
+            } else {
+              newActiveElapsed.remove(visitId);
+              newActiveSnapshot.remove(visitId);
+            }
             final resumedVisits = _replaceVisitInVisitsList(
               state.visits,
               visitId,
@@ -4423,6 +4486,8 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
                 pauseStartTimestampMs: newPauseStart,
                 totalPausedDurationSeconds: newTotalPaused,
                 actualStartTimestampMs: newActualStart,
+                activeVisitElapsedSeconds: newActiveElapsed,
+                activeVisitSnapshotTimestampMs: newActiveSnapshot,
                 clearError: true,
               ),
             );
@@ -4431,6 +4496,8 @@ class JourneyPlanCubit extends Cubit<JourneyPlanState> {
               pauseStartTimestampMs: newPauseStart,
               totalPausedDurationSeconds: newTotalPaused,
               actualStartTimestampMs: newActualStart,
+              activeVisitElapsedSeconds: newActiveElapsed,
+              activeVisitSnapshotTimestampMs: newActiveSnapshot,
             );
           } else {
             emit(state.copyWith(isLoading: false, clearError: true));

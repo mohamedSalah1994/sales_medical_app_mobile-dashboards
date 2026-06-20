@@ -38,9 +38,9 @@ class MobileDrawer extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   children: [
                     _DrawerMenuItem(
-                      icon: Icons.home_outlined,
-                      activeIcon: Icons.home,
-                      title: l10n.home,
+                      icon: Icons.dashboard_outlined,
+                      activeIcon: Icons.dashboard,
+                      title: l10n.dashboard,
                       index: 0,
                       selectedIndex: selectedIndex,
                       onTap: () {
@@ -157,16 +157,6 @@ class MobileDrawer extends StatelessWidget {
                       selectedIndex: selectedIndex,
                       onTap: () {
                         onItemTapped(10);
-                      },
-                    ),
-                    _DrawerMenuItem(
-                      icon: Icons.leaderboard_outlined,
-                      activeIcon: Icons.leaderboard,
-                      title: 'Dashboard',
-                      index: 14,
-                      selectedIndex: selectedIndex,
-                      onTap: () {
-                        onItemTapped(14);
                       },
                     ),
                     _DrawerMenuItem(

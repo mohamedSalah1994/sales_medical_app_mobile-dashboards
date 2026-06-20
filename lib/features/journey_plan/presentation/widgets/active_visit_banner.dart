@@ -14,8 +14,9 @@ import 'package:sales_medical_app_mobile/features/journey_plan/presentation/util
 import 'package:sales_medical_app_mobile/features/journey_plan/presentation/utils/visit_execution_status.dart';
 import 'package:sales_medical_app_mobile/l10n/app_localizations.dart';
 
-/// Slim bar under the app bar when a visit is in progress (started or paused).
-Visit? findActiveOngoingVisit(JourneyPlanState state) {
+/// All visits currently in progress (started or paused), de-duped across the
+/// open journey plan stops and the standalone visits list.
+List<Visit> findActiveOngoingVisits(JourneyPlanState state) {
   final fromStops =
       state.journeyPlan?.stops
           .map((s) => s.visit)
@@ -34,10 +35,16 @@ Visit? findActiveOngoingVisit(JourneyPlanState state) {
       merged[v.id] = existing.actions.length >= v.actions.length ? existing : v;
     }
   }
-  for (final v in merged.values) {
-    if (_isActiveOngoing(v, state)) return v;
-  }
-  return null;
+  return [
+    for (final v in merged.values)
+      if (_isActiveOngoing(v, state)) v,
+  ];
+}
+
+/// Slim bar under the app bar when a visit is in progress (started or paused).
+Visit? findActiveOngoingVisit(JourneyPlanState state) {
+  final list = findActiveOngoingVisits(state);
+  return list.isEmpty ? null : list.first;
 }
 
 bool _isActiveOngoing(Visit v, JourneyPlanState state) {
@@ -206,9 +213,9 @@ Future<void> _endPastVisitFromGlobalOverlay(
 /// Uses [appNavigatorKey] because this runs from the global overlay: that [BuildContext]
 /// is not under the [Navigator] (overlay is a sibling in [MaterialApp.builder]'s [Stack]),
 /// so [Navigator.of] would throw.
-void openActiveVisitFromGlobalOverlay(BuildContext context) {
+void openActiveVisitFromGlobalOverlay(BuildContext context, {Visit? visit}) {
   final cubit = context.read<JourneyPlanCubit>();
-  final v = findActiveOngoingVisit(cubit.state);
+  final v = visit ?? findActiveOngoingVisit(cubit.state);
   if (v == null) return;
 
   if (_isVisitPast(v)) {
@@ -261,6 +268,154 @@ void openActiveVisitFromGlobalOverlay(BuildContext context) {
   });
 }
 
+/// Bottom sheet listing every in-progress/paused visit so the user can jump to
+/// any of them when several are started at once (banner "3 dots" action).
+void showOpenVisitsSheet(BuildContext context) {
+  final cubit = context.read<JourneyPlanCubit>();
+  final sheetHost = appNavigatorKey.currentContext;
+  if (sheetHost == null) return;
+  showModalBottomSheet<void>(
+    context: sheetHost,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (sheetContext) {
+      return BlocProvider.value(
+        value: cubit,
+        child: BlocBuilder<JourneyPlanCubit, JourneyPlanState>(
+          builder: (innerContext, state) {
+            final visits = findActiveOngoingVisits(state);
+            if (visits.isEmpty) {
+              return const SizedBox(
+                height: 120,
+                child: Center(child: Text('No open visits')),
+              );
+            }
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.layers, color: AppColors.primary, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Open visits (${visits.length})',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.only(bottom: 8),
+                      itemCount: visits.length,
+                      separatorBuilder:
+                          (_, __) => const Divider(height: 1),
+                      itemBuilder: (_, index) {
+                        final v = visits[index];
+                        final isPaused =
+                            VisitExecutionStatus.isVisitPausedFromTiming(
+                          v,
+                          pausedVisitElapsedSeconds:
+                              state.pausedVisitElapsedSeconds,
+                          pauseStartTimestampMs: state.pauseStartTimestampMs,
+                          endedVisitElapsedSeconds:
+                              state.endedVisitElapsedSeconds,
+                        );
+                        final start = visitEffectiveStart(
+                          v,
+                          state.actualStartTimestampMs,
+                        );
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor:
+                                (isPaused ? AppColors.warning : AppColors.primary)
+                                    .withValues(alpha: 0.12),
+                            child: Icon(
+                              isPaused
+                                  ? Icons.pause_circle_filled
+                                  : Icons.play_circle_filled,
+                              color:
+                                  isPaused
+                                      ? AppColors.warning
+                                      : AppColors.primary,
+                            ),
+                          ),
+                          title: Text(
+                            v.customerName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          subtitle: Text(
+                            isPaused ? 'Paused' : 'In progress',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  isPaused
+                                      ? AppColors.warning
+                                      : AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          trailing:
+                              start == null
+                                  ? const Icon(Icons.chevron_right)
+                                  : _OpenVisitRowTimer(
+                                    start: start,
+                                    isPaused: isPaused,
+                                    pausedSec:
+                                        state.pausedVisitElapsedSeconds[v.id],
+                                    totalPaused:
+                                        state.totalPausedDurationSeconds[v.id] ??
+                                        0,
+                                    activeElapsedSec:
+                                        state.activeVisitElapsedSeconds[v.id],
+                                    activeSnapshotMs: state
+                                        .activeVisitSnapshotTimestampMs[v.id],
+                                  ),
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            openActiveVisitFromGlobalOverlay(
+                              context,
+                              visit: v,
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    },
+  );
+}
+
 /// Banner + timer; [onOpen] should switch to the relevant tab (standalone vs journey plans).
 class ActiveVisitBanner extends StatelessWidget {
   const ActiveVisitBanner({
@@ -292,7 +447,9 @@ class ActiveVisitBanner extends StatelessWidget {
               prev.totalPausedDurationSeconds !=
                   curr.totalPausedDurationSeconds,
       builder: (context, state) {
-        final visit = findActiveOngoingVisit(state);
+        final activeVisits = findActiveOngoingVisits(state);
+        final visit = activeVisits.isEmpty ? null : activeVisits.first;
+        final hasMultiple = activeVisits.length > 1;
         final Widget inner;
         final effectiveStart =
             visit == null
@@ -399,11 +556,41 @@ class ActiveVisitBanner extends StatelessWidget {
                       activeSnapshotMs: activeSnapshotMs,
                     ),
                     const SizedBox(width: 4),
-                    Icon(
-                      Icons.chevron_right,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      size: 22,
-                    ),
+                    if (hasMultiple) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${activeVisits.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => showOpenVisitsSheet(context),
+                        icon: const Icon(Icons.more_vert, color: Colors.white),
+                        iconSize: 22,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
+                      ),
+                    ] else
+                      Icon(
+                        Icons.chevron_right,
+                        color: Colors.white.withValues(alpha: 0.9),
+                        size: 22,
+                      ),
                   ],
                 ),
               ),
@@ -500,6 +687,56 @@ class _BannerTimer extends StatelessWidget {
             fontFeatures: [FontFeature.tabularFigures()],
           ),
         );
+      },
+    );
+  }
+}
+
+/// Live timer shown for each row in [showOpenVisitsSheet] (dark text variant).
+class _OpenVisitRowTimer extends StatelessWidget {
+  const _OpenVisitRowTimer({
+    required this.start,
+    required this.isPaused,
+    required this.pausedSec,
+    required this.totalPaused,
+    required this.activeElapsedSec,
+    required this.activeSnapshotMs,
+  });
+
+  final DateTime start;
+  final bool isPaused;
+  final int? pausedSec;
+  final int totalPaused;
+  final int? activeElapsedSec;
+  final int? activeSnapshotMs;
+
+  static const _style = TextStyle(
+    color: AppColors.textPrimary,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    if (isPaused) {
+      final sec = visitPausedElapsedSeconds(
+        effectiveStart: start,
+        totalPausedSeconds: totalPaused,
+        pausedElapsedSeconds: pausedSec,
+      );
+      return Text(formatVisitElapsedHms(sec), style: _style);
+    }
+    return StreamBuilder<int>(
+      stream: Stream.periodic(const Duration(seconds: 1), (x) => x),
+      builder: (context, snapshot) {
+        final elapsedSec = visitRunningElapsedSeconds(
+          effectiveStart: start,
+          totalPausedSeconds: totalPaused,
+          activeElapsedSeconds: activeElapsedSec,
+          activeSnapshotMs: activeSnapshotMs,
+        );
+        return Text(formatVisitElapsedHms(elapsedSec), style: _style);
       },
     );
   }

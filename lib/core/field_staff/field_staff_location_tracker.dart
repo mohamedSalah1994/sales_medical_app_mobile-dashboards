@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geolocator_android/geolocator_android.dart';
+import 'package:geolocator_apple/geolocator_apple.dart';
 import 'package:sales_medical_app_mobile/core/navigation/app_navigator_key.dart';
 import 'package:sales_medical_app_mobile/core/network/api_service.dart';
 import 'package:sales_medical_app_mobile/features/auth/presentation/cubit/auth_cubit.dart';
@@ -115,22 +117,61 @@ class FieldStaffLocationTracker with WidgetsBindingObserver {
         return;
       }
 
+      // Ask for "Always"/background access so updates keep flowing when the
+      // app is backgrounded. Best-effort: foreground tracking still works if
+      // the user only grants while-in-use.
+      if (permission == LocationPermission.whileInUse) {
+        try {
+          permission = await Geolocator.requestPermission();
+        } catch (_) {}
+      }
+
       _suppressLocationServiceDialogUntil = null;
       _suppressLocationPermissionDialogUntil = null;
 
       _periodic = Timer.periodic(_periodicInterval, (_) => _postCurrentPosition());
 
       _positionSub = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-          distanceFilter: 80,
-        ),
+        locationSettings: _buildLocationSettings(),
       ).listen(_onPosition, onError: (_) {});
 
       unawaited(_postCurrentPosition());
     } finally {
       _startInFlight = false;
     }
+  }
+
+  /// Platform-specific settings so location keeps updating while backgrounded:
+  /// Android runs a foreground service; iOS enables background location updates.
+  LocationSettings _buildLocationSettings() {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidSettings(
+        accuracy: LocationAccuracy.medium,
+        distanceFilter: 80,
+        forceLocationManager: false,
+        foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationTitle: 'Location sharing active',
+          notificationText:
+              'Your location is shared to keep you visible on the live map.',
+          enableWakeLock: true,
+          setOngoing: true,
+        ),
+      );
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      return AppleSettings(
+        accuracy: LocationAccuracy.medium,
+        distanceFilter: 80,
+        allowBackgroundLocationUpdates: true,
+        pauseLocationUpdatesAutomatically: false,
+        showBackgroundLocationIndicator: true,
+      );
+    }
+    return const LocationSettings(
+      accuracy: LocationAccuracy.medium,
+      distanceFilter: 80,
+    );
   }
 
   void _stopTracking() {

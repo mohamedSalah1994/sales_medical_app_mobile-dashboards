@@ -4,8 +4,7 @@ import 'package:sales_medical_app_mobile/features/auth/presentation/cubit/auth_c
 import 'package:sales_medical_app_mobile/features/dashboard/presentation/pages/area_manager_home_page.dart';
 import 'package:sales_medical_app_mobile/features/dashboard/presentation/pages/sales_employee_home_page.dart';
 
-/// Role-aware mobile home for the new dashboards (additive — does not replace
-/// the existing Home tab yet).
+/// Role-aware mobile dashboard shown as the app's home tab.
 class MobileDashboardLandingPage extends StatelessWidget {
   const MobileDashboardLandingPage({super.key});
 

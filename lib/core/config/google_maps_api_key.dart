@@ -3,5 +3,5 @@
 /// Override at build time: `--dart-define=GOOGLE_MAPS_API_KEY=your_key`
 const String kGoogleMapsApiKey = String.fromEnvironment(
   'GOOGLE_MAPS_API_KEY',
-  defaultValue: 'AIzaSyBQmdDok73WKd0Yj5y3Zbw09odqLzj4Igo',
+  defaultValue: 'AIzaSyDH09yWNP8qcUNlrPTLys54Nve0_sJMyqo',
 );

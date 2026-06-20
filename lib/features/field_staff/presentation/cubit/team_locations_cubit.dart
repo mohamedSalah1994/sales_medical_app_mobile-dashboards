@@ -15,7 +15,7 @@ class TeamLocationsCubit extends Cubit<TeamLocationsState> {
   final FieldStaffRemoteDataSource remoteDataSource;
 
   Timer? _pollTimer;
-  static const Duration pollInterval = Duration(seconds: 20);
+  static const Duration pollInterval = Duration(minutes: 1);
 
   void startPolling() {
     if (_pollTimer != null) return;

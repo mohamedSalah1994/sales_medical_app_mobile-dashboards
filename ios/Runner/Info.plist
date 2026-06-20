@@ -48,7 +48,14 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app needs access to your location to generate Google Maps links for visits.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>This app needs access to your location to generate Google Maps links for visits.</string>
+	<string>This app needs access to your location to keep you visible on the live team map, including while the app is in the background.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs access to your location to keep you visible on the live team map, including while the app is in the background.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
 	<key>GMSApiKey</key>
 	<string>AIzaSyDH09yWNP8qcUNlrPTLys54Nve0_sJMyqo</string>
 	<key>LSApplicationQueriesSchemes</key>
