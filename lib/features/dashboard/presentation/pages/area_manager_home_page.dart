@@ -80,6 +80,7 @@ class _KpiStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tiles = <Widget>[
       KpiTile(
+        compact: true,
         label: 'Active Reps',
         valueDisplay: '${data.activeReps.value}${data.activeReps.total != null ? ' / ${data.activeReps.total}' : ''}',
         icon: Icons.fact_check_outlined,
@@ -87,6 +88,7 @@ class _KpiStrip extends StatelessWidget {
         subtitle: 'Online Now',
       ),
       KpiTile(
+        compact: true,
         label: 'Team Achievement',
         valueDisplay: '${data.teamAchievement.pct.toStringAsFixed(0)}%',
         icon: Icons.bar_chart_rounded,
@@ -95,6 +97,7 @@ class _KpiStrip extends StatelessWidget {
         subtitle: 'vs Target',
       ),
       KpiTile(
+        compact: true,
         label: 'Planned Visits',
         valueDisplay: '${data.plannedVisits.value} / ${data.completedVisits.value + data.missedVisits.value + data.plannedVisits.value}',
         icon: Icons.event_outlined,
@@ -103,6 +106,7 @@ class _KpiStrip extends StatelessWidget {
         progressPct: data.completedVisits.pct,
       ),
       KpiTile(
+        compact: true,
         label: 'Completed Visits',
         valueDisplay: '${data.completedVisits.value} / ${data.plannedVisits.value}',
         icon: Icons.check_circle_outline,
@@ -111,6 +115,7 @@ class _KpiStrip extends StatelessWidget {
         progressPct: data.completedVisits.pct,
       ),
       KpiTile(
+        compact: true,
         label: 'Collections Today',
         valueDisplay: '${DashFmt.compact(data.collectionsToday.value)} ${data.collectionsToday.currency}',
         icon: Icons.account_balance_wallet_outlined,
@@ -119,6 +124,7 @@ class _KpiStrip extends StatelessWidget {
         deltaLabel: data.collectionsToday.deltaPeriodLabel,
       ),
       KpiTile(
+        compact: true,
         label: 'Orders Today',
         valueDisplay: '${data.ordersToday.relatedCount ?? 0}',
         icon: Icons.shopping_cart_outlined,
@@ -126,13 +132,10 @@ class _KpiStrip extends StatelessWidget {
         subtitle: '${DashFmt.compact(data.ordersToday.value)} ${data.ordersToday.currency}',
       ),
     ];
-    return GridView.count(
+    return DashboardMetricGrid(
       crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      childAspectRatio: 0.95,
+      heightFactor: 0.92,
+      minTileHeight: 108,
       children: tiles,
     );
   }

@@ -108,6 +108,7 @@ class KpiTile extends StatelessWidget {
     this.spark,
     this.progressPct,
     this.background,
+    this.compact = false,
   });
 
   final String label;
@@ -120,15 +121,23 @@ class KpiTile extends StatelessWidget {
   final List<double>? spark;
   final double? progressPct;
   final Color? background;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final color = iconColor ?? AppColors.primary;
+    final labelSize = compact ? 10.0 : 11.0;
+    final valueSize = compact ? 15.0 : 18.0;
+    final metaSize = compact ? 9.0 : 10.0;
+    final iconSize = compact ? 12.0 : 14.0;
+    final sparkHeight = compact ? 16.0 : 22.0;
+    final pad = compact ? 8.0 : 10.0;
+
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: EdgeInsets.all(pad),
       decoration: BoxDecoration(
         color: background ?? AppColors.card,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(compact ? 12 : 14),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -138,62 +147,175 @@ class KpiTile extends StatelessWidget {
           Row(children: [
             if (icon != null) ...[
               Container(
-                padding: const EdgeInsets.all(5),
+                padding: EdgeInsets.all(compact ? 4 : 5),
                 decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6)),
-                child: Icon(icon, size: 14, color: color),
+                child: Icon(icon, size: iconSize, color: color),
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: compact ? 4 : 6),
             ],
             Expanded(
               child: Text(label,
                   maxLines: 1,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                      fontSize: labelSize,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis),
             ),
           ]),
-          const SizedBox(height: 2),
+          SizedBox(height: compact ? 1 : 2),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: AlignmentDirectional.centerStart,
             child: Text(valueDisplay,
                 maxLines: 1,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                style: TextStyle(fontSize: valueSize, fontWeight: FontWeight.w800)),
           ),
           if (subtitle != null)
             Text(subtitle!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                style: TextStyle(fontSize: metaSize, color: AppColors.textSecondary)),
           if (deltaPct != null)
             Row(children: [
               Icon(deltaPct! >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 11, color: deltaPct! >= 0 ? AppColors.success : AppColors.error),
+                  size: compact ? 10 : 11,
+                  color: deltaPct! >= 0 ? AppColors.success : AppColors.error),
               Text('${deltaPct!.abs().toStringAsFixed(1)}%',
                   style: TextStyle(
-                      fontSize: 10,
+                      fontSize: metaSize,
                       color: deltaPct! >= 0 ? AppColors.success : AppColors.error,
                       fontWeight: FontWeight.w600)),
-              const SizedBox(width: 4),
+              const SizedBox(width: 3),
               if (deltaLabel != null)
                 Flexible(
                     child: Text(deltaLabel!,
                         maxLines: 1,
-                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                        style: TextStyle(fontSize: metaSize, color: AppColors.textSecondary),
                         overflow: TextOverflow.ellipsis)),
             ]),
           if (spark != null && spark!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            SparkLine(points: spark!, height: 22),
+            SizedBox(height: compact ? 2 : 4),
+            SparkLine(points: spark!, height: sparkHeight),
           ],
           if (progressPct != null) ...[
-            const SizedBox(height: 4),
-            ThresholdProgressBar(pct: progressPct!),
+            SizedBox(height: compact ? 2 : 4),
+            ThresholdProgressBar(pct: progressPct!, height: compact ? 4 : 5),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Fixed-height KPI grid that adapts tile height to screen width.
+class DashboardMetricGrid extends StatelessWidget {
+  const DashboardMetricGrid({
+    super.key,
+    required this.children,
+    this.crossAxisCount = 2,
+    this.heightFactor = 0.82,
+    this.minTileHeight = 96,
+  });
+
+  final List<Widget> children;
+  final int crossAxisCount;
+  final double heightFactor;
+  final double minTileHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    const horizontalPad = 12.0;
+    const spacing = 8.0;
+    final cellWidth =
+        (width - horizontalPad * 2 - spacing * (crossAxisCount - 1)) /
+        crossAxisCount;
+    final tileHeight = (cellWidth * heightFactor).clamp(minTileHeight, 140.0);
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: children.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: spacing,
+        mainAxisSpacing: spacing,
+        mainAxisExtent: tileHeight,
+      ),
+      itemBuilder: (_, index) => children[index],
+    );
+  }
+}
+
+abstract final class DashboardButtons {
+  static const double actionHeight = 34;
+
+  static ButtonStyle compactFilled(Color background) => ElevatedButton.styleFrom(
+        backgroundColor: background,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+        minimumSize: const Size(0, actionHeight),
+        fixedSize: const Size.fromHeight(actionHeight),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      );
+
+  static final ButtonStyle compactOutlined = OutlinedButton.styleFrom(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+    minimumSize: const Size(0, actionHeight),
+    fixedSize: const Size.fromHeight(actionHeight),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    visualDensity: VisualDensity.compact,
+    textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+  );
+}
+
+/// Full-width dashboard action button with a fixed height so paired buttons match.
+class DashboardActionButton extends StatelessWidget {
+  const DashboardActionButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.filled = false,
+    this.filledColor,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool filled;
+  final Color? filledColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconWidget = Icon(icon, size: 14);
+    final labelWidget = Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
+
+    return SizedBox(
+      height: DashboardButtons.actionHeight,
+      width: double.infinity,
+      child:
+          filled
+              ? ElevatedButton.icon(
+                onPressed: onPressed,
+                style: DashboardButtons.compactFilled(
+                  filledColor ?? AppColors.primary,
+                ),
+                icon: iconWidget,
+                label: labelWidget,
+              )
+              : OutlinedButton.icon(
+                onPressed: onPressed,
+                style: DashboardButtons.compactOutlined,
+                icon: iconWidget,
+                label: labelWidget,
+              ),
     );
   }
 }
@@ -309,56 +431,63 @@ class GreetingBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [AppColors.primary, AppColors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: const Text('dkt',
                 style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w900,
-                    fontSize: 16)),
+                    fontSize: 10)),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(greeting,
                     style: const TextStyle(
-                        color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                        color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
                 Text(subtitle,
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.85),
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: FontWeight.w500)),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          Flexible(
+            child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
             ),
-            child: Row(children: [
-              const Icon(Icons.calendar_today, color: Colors.white, size: 14),
-              const SizedBox(width: 6),
-              Text(dateLabel, style: const TextStyle(color: Colors.white, fontSize: 12)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.calendar_today, color: Colors.white, size: 10),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(dateLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 10)),
+              ),
             ]),
+          ),
           ),
         ],
       ),

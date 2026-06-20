@@ -16,10 +16,12 @@ class WalletCard extends StatelessWidget {
     super.key,
     required this.isTablet,
     required this.isDesktop,
+    this.compact = false,
   });
 
   final bool isTablet;
   final bool isDesktop;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -29,15 +31,36 @@ class WalletCard extends StatelessWidget {
         final wallet = state.wallet;
         final hasError = state.errorMessage != null && wallet == null;
 
+        final padding = compact
+            ? 10.0
+            : (isDesktop
+                ? 20.0
+                : isTablet
+                    ? 18.0
+                    : 16.0);
+        final radius = compact ? 10.0 : (isDesktop ? 16.0 : 12.0);
+        final iconBoxPadding = compact ? 6.0 : (isDesktop ? 12.0 : 10.0);
+        final iconSize = compact
+            ? 18.0
+            : (isDesktop
+                ? 32.0
+                : isTablet
+                    ? 28.0
+                    : 24.0);
+        final titleSize = compact ? 10.0 : (isTablet ? 13.0 : 12.0);
+        final balanceSize = compact
+            ? 18.0
+            : (isDesktop
+                ? 26.0
+                : isTablet
+                    ? 24.0
+                    : 22.0);
+        final contextSize = compact ? 9.0 : 11.0;
+        final rowGap = compact ? 8.0 : (isDesktop ? 16.0 : 12.0);
+
         return Container(
           width: double.infinity,
-          padding: EdgeInsets.all(
-            isDesktop
-                ? 20
-                : isTablet
-                    ? 18
-                    : 16,
-          ),
+          padding: EdgeInsets.all(padding),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -47,12 +70,12 @@ class WalletCard extends StatelessWidget {
                 AppColors.success.withValues(alpha: 0.85),
               ],
             ),
-            borderRadius: BorderRadius.circular(isDesktop ? 16 : 12),
+            borderRadius: BorderRadius.circular(radius),
             boxShadow: [
               BoxShadow(
-                color: AppColors.success.withValues(alpha: 0.25),
-                blurRadius: isDesktop ? 12 : 8,
-                offset: Offset(0, isDesktop ? 4 : 3),
+                color: AppColors.success.withValues(alpha: 0.22),
+                blurRadius: compact ? 6 : (isDesktop ? 12 : 8),
+                offset: Offset(0, compact ? 2 : (isDesktop ? 4 : 3)),
               ),
             ],
           ),
@@ -60,22 +83,18 @@ class WalletCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                padding: EdgeInsets.all(isDesktop ? 12 : 10),
+                padding: EdgeInsets.all(iconBoxPadding),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(isDesktop ? 12 : 10),
+                  borderRadius: BorderRadius.circular(compact ? 8 : (isDesktop ? 12 : 10)),
                 ),
                 child: Icon(
                   Icons.account_balance_wallet_outlined,
                   color: Colors.white,
-                  size: isDesktop
-                      ? 32
-                      : isTablet
-                          ? 28
-                          : 24,
+                  size: iconSize,
                 ),
               ),
-              SizedBox(width: isDesktop ? 16 : 12),
+              SizedBox(width: rowGap),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,20 +103,20 @@ class WalletCard extends StatelessWidget {
                     Text(
                       l10n.walletTitle,
                       style: TextStyle(
-                        fontSize: isTablet ? 13 : 12,
+                        fontSize: titleSize,
                         color: Colors.white.withValues(alpha: 0.85),
                         fontWeight: FontWeight.w500,
-                        letterSpacing: 0.3,
+                        letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: compact ? 2 : 4),
                     if (state.isLoading && wallet == null)
-                      _buildLoadingIndicator()
+                      _buildLoadingIndicator(compact: compact)
                     else if (hasError)
                       Text(
                         l10n.walletLoadFailed,
                         style: TextStyle(
-                          fontSize: isTablet ? 13 : 12,
+                          fontSize: compact ? 10 : (isTablet ? 13 : 12),
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
                         ),
@@ -108,11 +127,7 @@ class WalletCard extends StatelessWidget {
                       Text(
                         _formatBalance(wallet?.balance ?? 0),
                         style: TextStyle(
-                          fontSize: isDesktop
-                              ? 26
-                              : isTablet
-                                  ? 24
-                                  : 22,
+                          fontSize: balanceSize,
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
@@ -122,11 +137,11 @@ class WalletCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     if (wallet != null && _hasContextInfo(wallet)) ...[
-                      const SizedBox(height: 6),
+                      SizedBox(height: compact ? 3 : 6),
                       Text(
                         _contextLabel(l10n, wallet),
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: contextSize,
                           color: Colors.white.withValues(alpha: 0.85),
                           fontWeight: FontWeight.w500,
                         ),
@@ -139,11 +154,17 @@ class WalletCard extends StatelessWidget {
               ),
               IconButton(
                 tooltip: l10n.walletRefresh,
+                padding: compact ? EdgeInsets.zero : null,
+                constraints: compact
+                    ? const BoxConstraints(minWidth: 32, minHeight: 32)
+                    : null,
+                visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
                 onPressed: state.isLoading
                     ? null
                     : () => context.read<WalletCubit>().loadWallet(),
                 icon: Icon(
                   Icons.refresh,
+                  size: compact ? 18 : 24,
                   color: Colors.white.withValues(alpha: 0.9),
                 ),
               ),
@@ -154,12 +175,13 @@ class WalletCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadingIndicator() {
+  Widget _buildLoadingIndicator({bool compact = false}) {
+    final size = compact ? 16.0 : 22.0;
     return SizedBox(
-      width: 22,
-      height: 22,
+      width: size,
+      height: size,
       child: CircularProgressIndicator(
-        strokeWidth: 2,
+        strokeWidth: compact ? 1.8 : 2,
         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
       ),
     );
