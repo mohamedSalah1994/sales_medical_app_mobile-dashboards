@@ -17,6 +17,7 @@ class CreateErpCustomerRequestModel {
     this.phone2,
     this.address,
     this.uCusTyp,
+    this.vatNumber,
   });
 
   final String? series;
@@ -40,6 +41,7 @@ class CreateErpCustomerRequestModel {
   final String? phone2;
   final String? address;
   final String? uCusTyp;
+  final String? vatNumber;
 
   /// All attributes included; string fields default to empty string. Location
   /// fields (`U_LOC_PNT`, `U_G_Link`) are sent as JSON `null` when not
@@ -68,6 +70,7 @@ class CreateErpCustomerRequestModel {
       'phone2': phone2?.trim().isEmpty ?? true ? '' : phone2!,
       'address': address?.trim().isEmpty ?? true ? '' : address!,
       'U_CUS_TYP': uCusTyp?.trim().isEmpty ?? true ? '' : uCusTyp!,
+      'vatNumber': vatNumber?.trim().isEmpty ?? true ? '' : vatNumber!,
     };
   }
 }

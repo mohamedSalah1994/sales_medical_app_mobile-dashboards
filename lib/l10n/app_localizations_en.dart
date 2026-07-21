@@ -911,6 +911,65 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customersFieldPhone2 => 'Phone 2';
 
   @override
+  String get customersPhoneKindMobile => 'Mobile';
+
+  @override
+  String get customersPhoneKindLandLine => 'Land line';
+
+  @override
+  String get customersPhoneMobileInvalid => 'Enter 11 digits after 2 (12 total)';
+
+  @override
+  String get customersPhoneLandLineInvalid => 'Enter exactly 10 digits for land line';
+
+  @override
+  String get customersPhoneDigitsOnly => 'Enter digits only';
+
+  @override
+  String customersPhoneMaxLengthInvalid(int max) {
+    return 'Enter at most $max digits';
+  }
+
+  @override
+  String get customersFieldVatNumber => 'VAT Number';
+
+  @override
+  String get customersFieldRequired => 'This field is required';
+
+  @override
+  String get customersPhone1Invalid => 'Enter 11 digits after 2 (12 total, e.g. 01234567890)';
+
+  @override
+  String get customersPhone2Invalid => 'Phone 2 must be at most 10 characters';
+
+  @override
+  String get customersLocationRequired => 'Customer location is required';
+
+  @override
+  String get customersSelectSeriesRequired => 'Please select a series';
+
+  @override
+  String get customersSelectChannelBpRequired => 'Please select a channel BP customer';
+
+  @override
+  String get customersSelectAreaRequired => 'Please select an area';
+
+  @override
+  String get customersSelectZoneRequired => 'Please select a zone';
+
+  @override
+  String get customersSelectStateRequired => 'Please select a state';
+
+  @override
+  String get customersSelectCityRequired => 'Please select a city';
+
+  @override
+  String get customersSelectRegionRequired => 'Please select a region';
+
+  @override
+  String get customersSelectCustomerTypeRequired => 'Please select a customer type';
+
+  @override
   String get customersFieldGov => 'Gov';
 
   @override

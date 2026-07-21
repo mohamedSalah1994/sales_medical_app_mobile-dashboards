@@ -10,6 +10,7 @@ class ErpCustomerModel {
     this.email,
     this.balance,
     this.cardType = '',
+    this.vatNumber,
   });
 
   final String code;
@@ -25,6 +26,7 @@ class ErpCustomerModel {
 
   /// ODBC/BP `cardType`: `C` = customer, `L` = lead.
   final String cardType;
+  final String? vatNumber;
 
   static double? _parseBalance(Map<String, dynamic> json) {
     const keys = [
@@ -54,6 +56,7 @@ class ErpCustomerModel {
       email: json['email'] as String?,
       balance: _parseBalance(json),
       cardType: json['cardType']?.toString() ?? '',
+      vatNumber: json['vatNumber']?.toString(),
     );
   }
 }

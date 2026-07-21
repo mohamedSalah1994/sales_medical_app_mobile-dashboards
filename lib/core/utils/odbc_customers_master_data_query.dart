@@ -3,7 +3,7 @@ import 'package:sales_medical_app_mobile/core/constants/customer_odbc_scope.dart
 /// Builds query parameters for `GET /api/MasterData/customers/odbc`.
 ///
 /// Uses API names including `salesEmpCode` and the documented `forienName`
-/// query key (server spelling).
+/// query key (server spelling). `scope` is sent as `Customers` / `Leads` / `All`.
 Map<String, dynamic> buildOdbcCustomersMasterDataQuery({
   required int skip,
   required int take,
@@ -24,7 +24,7 @@ Map<String, dynamic> buildOdbcCustomersMasterDataQuery({
     'activeOnly': activeOnly ?? true,
     'skip': skip,
     'take': take,
-    'scope': scope,
+    'scope': _odbcScopeQueryValue(scope),
   };
 
   void putIfNonEmpty(String key, String? v) {
@@ -43,4 +43,15 @@ Map<String, dynamic> buildOdbcCustomersMasterDataQuery({
   putIfNonEmpty('region', region);
   if (salesEmpCode != null) q['salesEmpCode'] = salesEmpCode;
   return q;
+}
+
+String _odbcScopeQueryValue(int scope) {
+  switch (scope) {
+    case CustomerOdbcScope.customersOnly:
+      return 'Customers';
+    case CustomerOdbcScope.leadsOnly:
+      return 'Leads';
+    default:
+      return 'All';
+  }
 }

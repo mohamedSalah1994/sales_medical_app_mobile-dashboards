@@ -29,6 +29,8 @@ class Customer {
     this.uTerr = '',
     this.uS = '',
     this.uRegion = '',
+    this.uCusTyp = '',
+    this.vatNumber = '',
     this.extendedProperties,
   });
 
@@ -62,6 +64,8 @@ class Customer {
   final String uS;
   /// ERP `U_REGION` (sub-city / district).
   final String uRegion;
+  final String uCusTyp;
+  final String vatNumber;
   final Map<String, dynamic>? extendedProperties;
 
   static const _locationPointKeys = [
@@ -259,6 +263,21 @@ class Customer {
       uTerr: json['u_Terr']?.toString() ?? '',
       uS: Customer._firstString(json, ['u_S', 'U_S']) ?? '',
       uRegion: Customer._firstString(json, ['U_REGION', 'u_REGION']) ?? '',
+      uCusTyp: Customer._firstString(json, ['U_CUS_TYP', 'u_CUS_TYP']) ?? '',
+      vatNumber:
+          Customer._firstString(json, [
+            'vatNumber',
+            'VatNumber',
+            'VATNumber',
+          ]) ??
+          (ext != null
+              ? Customer._firstString(ext, [
+                'vatNumber',
+                'VatNumber',
+                'VATNumber',
+              ])
+              : null) ??
+          '',
       extendedProperties: ext,
     );
   }
@@ -293,6 +312,8 @@ class Customer {
       'u_S': uS,
       'U_REGION': uRegion,
       'u_City': city,
+      'U_CUS_TYP': uCusTyp,
+      'vatNumber': vatNumber,
       if (extendedProperties != null)
         'extendedProperties': extendedProperties,
     };

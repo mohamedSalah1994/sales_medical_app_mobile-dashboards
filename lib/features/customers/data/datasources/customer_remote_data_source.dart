@@ -24,7 +24,9 @@ abstract class CustomerRemoteDataSource {
     int scope = CustomerOdbcScope.all,
   });
   Future<List<CustomerSeriesModel>> getCustomerSeries();
-  Future<Map<String, dynamic>> createCustomer(CreateErpCustomerRequestModel body);
+  Future<Map<String, dynamic>> createCustomer(
+    CreateErpCustomerRequestModel body,
+  );
   Future<List<MasterDataOptionModel>> getAreas();
   Future<List<MasterDataOptionModel>> getAreaUdtZones(String area);
   Future<List<MasterDataOptionModel>> getAreaUdtStates(String zone);
@@ -89,7 +91,8 @@ class CustomerRemoteDataSourceImpl implements CustomerRemoteDataSource {
   @override
   Future<List<CustomerSeriesModel>> getCustomerSeries() async {
     final response = await apiService.get('/api/Erp/customers/series');
-    if (response.statusCode != 200) throw Exception('Failed to get customer series');
+    if (response.statusCode != 200)
+      throw Exception('Failed to get customer series');
     final raw = response.data;
     final list = _extractJsonList(raw);
     return list
@@ -99,7 +102,9 @@ class CustomerRemoteDataSourceImpl implements CustomerRemoteDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>> createCustomer(CreateErpCustomerRequestModel body) async {
+  Future<Map<String, dynamic>> createCustomer(
+    CreateErpCustomerRequestModel body,
+  ) async {
     final response = await apiService.post(
       '/api/Erp/customers',
       data: body.toJson(),
@@ -198,22 +203,18 @@ class CustomerRemoteDataSourceImpl implements CustomerRemoteDataSource {
       salesEmpCode: salesEmployeeCode,
     );
 
-    try {
-      final response = await apiService.get(
-        '/api/MasterData/customers/odbc',
-        queryParameters: queryParameters,
-      );
+    final response = await apiService.get(
+      '/api/MasterData/customers/odbc',
+      queryParameters: queryParameters,
+    );
 
-      if (response.statusCode == 200) {
-        return <String, dynamic>{
-          'items': _parseOdbcCustomersResponseBody(response.data),
-        };
-      } else {
-        throw Exception('Failed to get customers');
-      }
-    } catch (e) {
-      rethrow;
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get customers');
     }
+
+    return <String, dynamic>{
+      'items': _parseOdbcCustomersResponseBody(response.data),
+    };
   }
 }
 

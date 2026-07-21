@@ -16,6 +16,7 @@ import 'package:sales_medical_app_mobile/features/journey_plan/presentation/widg
 import 'package:sales_medical_app_mobile/features/journey_plan/presentation/widgets/journey_plans_list_widget.dart';
 import 'package:sales_medical_app_mobile/features/journey_plan/presentation/widgets/visits_list_widget.dart';
 import 'package:sales_medical_app_mobile/features/journey_plan/presentation/widgets/step_indicator_widget.dart';
+import 'package:sales_medical_app_mobile/features/journey_plan/presentation/widgets/journey_plan_user_filter_field.dart';
 import 'package:sales_medical_app_mobile/l10n/app_localizations.dart';
 
 class JourneyPlanPage extends StatefulWidget {
@@ -197,11 +198,7 @@ class _JourneyPlanView extends StatelessWidget {
   final bool showScaffold;
   final Future<void> Function()? onRefresh;
 
-  void _showFilterDialog(
-    BuildContext context,
-    JourneyPlanState state,
-    List<MapEntry<String, String>> userList,
-  ) {
+  void _showFilterDialog(BuildContext context, JourneyPlanState state) {
     final cubit = context.read<JourneyPlanCubit>();
     final authState = context.read<AuthCubit>().state;
     final user = authState.loginResponse?.user;
@@ -222,7 +219,7 @@ class _JourneyPlanView extends StatelessWidget {
             value: cubit,
             child: BlocProvider.value(
               value: authCubit,
-              child: _FilterBottomSheet(state: state, userList: userList),
+              child: _FilterBottomSheet(state: state),
             ),
           ),
     );
@@ -353,15 +350,6 @@ class _JourneyPlanView extends StatelessWidget {
                 ),
               );
             }
-
-            // Extract unique users from journey plans
-            final uniqueUsers = <String, String>{};
-            for (final plan in state.journeyPlans) {
-              if (plan.userId.isNotEmpty && plan.userName.isNotEmpty) {
-                uniqueUsers[plan.userId] = plan.userName;
-              }
-            }
-            final userList = uniqueUsers.entries.toList();
 
             // Check if user is SalesRep, Supervisor, Manager, or Admin
             final authState = context.read<AuthCubit>().state;
@@ -536,7 +524,7 @@ class _JourneyPlanView extends StatelessWidget {
                                   : AppColors.textSecondary,
                         ),
                         onPressed: () {
-                          _showFilterDialog(context, state, userList);
+                          _showFilterDialog(context, state);
                         },
                         tooltip: 'Filters',
                       ),
@@ -591,10 +579,9 @@ class _JourneyPlanView extends StatelessWidget {
 }
 
 class _FilterBottomSheet extends StatefulWidget {
-  const _FilterBottomSheet({required this.state, required this.userList});
+  const _FilterBottomSheet({required this.state});
 
   final JourneyPlanState state;
-  final List<MapEntry<String, String>> userList;
 
   @override
   State<_FilterBottomSheet> createState() => _FilterBottomSheetState();
@@ -652,6 +639,16 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
           cubit.loadCustomers(
             stateFilter: _selectedCustomerStateCode,
           );
+        }
+
+        final ownerId = resolveSubordinatesOwnerId(
+          loggedInUserId: user?.id,
+          role: user?.role,
+          filterSupervisorId: state.filterSupervisorId,
+        );
+        if (ownerId != null &&
+            showJourneyPlanUserFilterForRole(user?.role)) {
+          cubit.loadSubordinates(ownerId);
         }
       }
     });
@@ -761,93 +758,66 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // User / Sales employee Filter
-                              if (builderContext
-                                      .read<AuthCubit>()
-                                      .state
-                                      .loginResponse
-                                      ?.user
-                                      .role
-                                      .toLowerCase()
-                                      .trim() ==
-                                  'admin')
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: Text(
-                                    state.filterSupervisorId != null
-                                        ? () {
-                                          final sup =
-                                              state.supervisors
-                                                  .where(
-                                                    (s) =>
-                                                        s.id ==
-                                                        state
-                                                            .filterSupervisorId,
-                                                  )
-                                                  .toList();
-                                          return 'Sales Employees of ${sup.isEmpty ? 'Supervisor' : sup.first.fullName}';
-                                        }()
-                                        : 'Sales Employees of selected supervisor',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.labelSmall?.copyWith(
-                                      color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                              Text(
-                                'Filter by User',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.labelLarge?.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: AppColors.border),
-                                ),
-                                child: DropdownButtonFormField<String>(
-                                  value: state.filterUserId,
-                                  decoration: InputDecoration(
-                                    hintText:
-                                        AppLocalizations.of(
-                                          context,
-                                        )!.selectUserHint,
-                                    prefixIcon: Icon(
-                                      Icons.person,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 16,
-                                    ),
-                                  ),
-                                  items: [
-                                    DropdownMenuItem<String>(
-                                      value: null,
-                                      child: Text(
-                                        AppLocalizations.of(context)!.allUsers,
+                              if (showJourneyPlanUserFilterForRole(
+                                builderContext
+                                    .read<AuthCubit>()
+                                    .state
+                                    .loginResponse
+                                    ?.user
+                                    .role,
+                              )) ...[
+                                if (builderContext
+                                        .read<AuthCubit>()
+                                        .state
+                                        .loginResponse
+                                        ?.user
+                                        .role
+                                        .toLowerCase()
+                                        .trim() ==
+                                    'admin')
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Text(
+                                      state.filterSupervisorId != null
+                                          ? () {
+                                            final sup =
+                                                state.supervisors
+                                                    .where(
+                                                      (s) =>
+                                                          s.id ==
+                                                          state
+                                                              .filterSupervisorId,
+                                                    )
+                                                    .toList();
+                                            return 'Sales Employees of ${sup.isEmpty ? 'Supervisor' : sup.first.fullName}';
+                                          }()
+                                          : 'Sales Employees of selected supervisor',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.labelSmall?.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11,
                                       ),
                                     ),
-                                    ...widget.userList.map(
-                                      (user) => DropdownMenuItem<String>(
-                                        value: user.key,
-                                        child: Text(user.value),
-                                      ),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
+                                  ),
+                                Text(
+                                  'Filter by User',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.labelLarge?.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                JourneyPlanUserFilterField(
+                                  state: state,
+                                  onUserSelected: (userId) {
                                     builderContext
                                         .read<JourneyPlanCubit>()
                                         .setFilters(
-                                          userId: value,
+                                          userId: userId,
                                           supervisorId:
                                               state.filterSupervisorId,
                                           customerId: state.filterCustomerId,
@@ -859,7 +829,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                                         .applyFilters();
                                   },
                                 ),
-                              ),
+                              ],
                               // Supervisor Filter removed - Admin uses 3-level card navigation
                               const SizedBox(height: 24),
                               // Customer Filter
