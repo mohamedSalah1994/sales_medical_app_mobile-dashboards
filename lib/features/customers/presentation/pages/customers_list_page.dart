@@ -113,7 +113,7 @@ class _CustomersListPageState extends State<CustomersListPage> {
   void _openCreateCustomer() async {
     // Read cubit from current context (has provider) before pushing new route
     final cubit = context.read<CustomersCubit>();
-    await Navigator.of(context).push<void>(
+    await Navigator.of(context).push<Object?>(
       MaterialPageRoute(
         builder: (context) => BlocProvider.value(
           value: cubit,
@@ -121,7 +121,9 @@ class _CustomersListPageState extends State<CustomersListPage> {
         ),
       ),
     );
-    if (mounted) _loadCustomers();
+    if (!mounted) return;
+    _searchController.clear();
+    _loadCustomers();
   }
 
   void _openCustomerDetail(Customer customer) {
@@ -334,7 +336,7 @@ class _CustomerCard extends StatelessWidget {
     final displayName = customer.localizedName(lang);
     final secondaryName = customer.secondaryDisplayName(lang);
     final cardTypeLabel = odbcCardTypeKindLabel(customer.cardType);
-    final isLead = customer.cardType.trim().toUpperCase() == 'L';
+    final isLead = isOdbcLeadCardType(customer.cardType);
     final locationText = customer.locationDisplayText;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),

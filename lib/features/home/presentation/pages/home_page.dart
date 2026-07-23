@@ -17,6 +17,7 @@ import 'package:sales_medical_app_mobile/features/journey_plan/presentation/widg
 import 'package:sales_medical_app_mobile/features/customers/presentation/cubit/customers_cubit.dart';
 import 'package:sales_medical_app_mobile/features/targets/presentation/cubit/targets_cubit.dart';
 import 'package:sales_medical_app_mobile/features/journey_plan/presentation/cubit/journey_plan_state.dart';
+import 'package:sales_medical_app_mobile/features/journey_plan/presentation/widgets/journey_plan_user_filter_field.dart';
 import 'package:sales_medical_app_mobile/features/targets/presentation/cubit/targets_state.dart';
 import 'package:sales_medical_app_mobile/features/surveys/presentation/cubit/surveys_cubit.dart';
 import 'package:sales_medical_app_mobile/features/inventory/presentation/cubit/inventory_cubit.dart';
@@ -179,7 +180,6 @@ class _HomeViewState extends State<_HomeView> {
   void _showJourneyPlanFilterDialog(
     BuildContext context,
     JourneyPlanState state,
-    List<MapEntry<String, String>> userList,
   ) {
     final cubit = context.read<JourneyPlanCubit>();
     showModalBottomSheet(
@@ -189,10 +189,7 @@ class _HomeViewState extends State<_HomeView> {
       builder:
           (dialogContext) => BlocProvider.value(
             value: cubit,
-            child: _JourneyPlanFilterBottomSheet(
-              state: state,
-              userList: userList,
-            ),
+            child: _JourneyPlanFilterBottomSheet(state: state),
           ),
     );
   }
@@ -598,15 +595,6 @@ class _HomeViewState extends State<_HomeView> {
         if (_selectedIndex == 2)
           BlocBuilder<JourneyPlanCubit, JourneyPlanState>(
             builder: (context, journeyState) {
-              // Extract unique users from journey plans
-              final uniqueUsers = <String, String>{};
-              for (final plan in journeyState.journeyPlans) {
-                if (plan.userId.isNotEmpty && plan.userName.isNotEmpty) {
-                  uniqueUsers[plan.userId] = plan.userName;
-                }
-              }
-              final userList = uniqueUsers.entries.toList();
-
               return Stack(
                 children: [
                   IconButton(
@@ -618,11 +606,7 @@ class _HomeViewState extends State<_HomeView> {
                               : AppColors.textSecondary,
                     ),
                     onPressed: () {
-                      _showJourneyPlanFilterDialog(
-                        context,
-                        journeyState,
-                        userList,
-                      );
+                      _showJourneyPlanFilterDialog(context, journeyState);
                     },
                     tooltip: 'Filters',
                   ),
@@ -1007,13 +991,9 @@ class _NavItem {
 }
 
 class _JourneyPlanFilterBottomSheet extends StatefulWidget {
-  const _JourneyPlanFilterBottomSheet({
-    required this.state,
-    required this.userList,
-  });
+  const _JourneyPlanFilterBottomSheet({required this.state});
 
   final JourneyPlanState state;
-  final List<MapEntry<String, String>> userList;
 
   @override
   State<_JourneyPlanFilterBottomSheet> createState() =>
@@ -1035,9 +1015,19 @@ class _JourneyPlanFilterBottomSheetState
       if (!mounted) return;
       final cubit = context.read<JourneyPlanCubit>();
       final state = cubit.state;
+      final auth = context.read<AuthCubit>().state.loginResponse?.user;
 
       if (state.customers.isEmpty && !state.isLoadingCustomers) {
         cubit.loadCustomers();
+      }
+
+      final ownerId = resolveSubordinatesOwnerId(
+        loggedInUserId: auth?.id,
+        role: auth?.role,
+        filterSupervisorId: state.filterSupervisorId,
+      );
+      if (ownerId != null && showJourneyPlanUserFilterForRole(auth?.role)) {
+        cubit.loadSubordinates(ownerId);
       }
     });
   }
@@ -1136,53 +1126,33 @@ class _JourneyPlanFilterBottomSheetState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // User Filter
-                            Text(
-                              'Filter by User',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.labelLarge?.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: DropdownButtonFormField<String>(
-                                value: state.filterUserId,
-                                decoration: InputDecoration(
-                                  hintText: 'Select user...',
-                                  prefixIcon: Icon(
-                                    Icons.person,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 16,
-                                  ),
+                            if (showJourneyPlanUserFilterForRole(
+                              builderContext
+                                  .read<AuthCubit>()
+                                  .state
+                                  .loginResponse
+                                  ?.user
+                                  .role,
+                            )) ...[
+                              Text(
+                                'Filter by User',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.labelLarge?.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                items: [
-                                  const DropdownMenuItem<String>(
-                                    value: null,
-                                    child: Text('All Users'),
-                                  ),
-                                  ...widget.userList.map(
-                                    (user) => DropdownMenuItem<String>(
-                                      value: user.key,
-                                      child: Text(user.value),
-                                    ),
-                                  ),
-                                ],
-                                onChanged: (value) {
+                              ),
+                              const SizedBox(height: 8),
+                              JourneyPlanUserFilterField(
+                                state: state,
+                                onUserSelected: (userId) {
                                   builderContext
                                       .read<JourneyPlanCubit>()
                                       .setFilters(
-                                        userId: value,
+                                        userId: userId,
+                                        supervisorId: state.filterSupervisorId,
+                                        customerId: state.filterCustomerId,
                                         startDate: state.filterStartDate,
                                         endDate: state.filterEndDate,
                                       );
@@ -1191,8 +1161,8 @@ class _JourneyPlanFilterBottomSheetState
                                       .applyFilters();
                                 },
                               ),
-                            ),
-                            const SizedBox(height: 24),
+                              const SizedBox(height: 24),
+                            ],
                             // Customer Filter
                             Text(
                               'Filter by Customer',

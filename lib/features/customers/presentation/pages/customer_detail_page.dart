@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sales_medical_app_mobile/core/theme/app_colors.dart';
 import 'package:sales_medical_app_mobile/features/customers/domain/entities/customer.dart';
+import 'package:sales_medical_app_mobile/l10n/app_localizations.dart';
 
 /// Full details of a single customer (from GET /api/Erp/customers list item).
 class CustomerDetailPage extends StatelessWidget {
@@ -67,6 +68,7 @@ class CustomerDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final displayName = customer.localizedName(
       Localizations.localeOf(context).languageCode,
     );
@@ -265,6 +267,11 @@ class CustomerDetailPage extends StatelessWidget {
                   icon: Icons.price_change_outlined,
                   label: 'Price list code',
                   value: _str(customer.priceListCode),
+                ),
+                _DetailRow(
+                  icon: Icons.receipt_long_outlined,
+                  label: l10n.customersFieldVatNumber,
+                  value: _str(customer.vatNumber),
                 ),
               ],
             ),

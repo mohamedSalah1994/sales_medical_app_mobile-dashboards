@@ -934,6 +934,67 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customersFieldPhone2 => 'هاتف 2';
 
   @override
+  String get customersPhoneKindMobile => 'جوال';
+
+  @override
+  String get customersPhoneKindLandLine => 'خط أرضي';
+
+  @override
+  String get customersPhoneMobileInvalid => 'أدخل 11 رقماً بعد 2 (الإجمالي 12)';
+
+  @override
+  String get customersPhoneLandLineInvalid =>
+      'أدخل 10 أرقام بالضبط للخط الأرضي';
+
+  @override
+  String get customersPhoneDigitsOnly => 'أدخل أرقاماً فقط';
+
+  @override
+  String customersPhoneMaxLengthInvalid(int max) {
+    return 'أدخل $max أرقام كحد أقصى';
+  }
+
+  @override
+  String get customersFieldVatNumber => 'الرقم الضريبي';
+
+  @override
+  String get customersFieldRequired => 'هذا الحقل مطلوب';
+
+  @override
+  String get customersPhone1Invalid =>
+      'أدخل 11 رقماً بعد 2 (الإجمالي 12، مثال: 01234567890)';
+
+  @override
+  String get customersPhone2Invalid => 'يجب ألا يتجاوز هاتف 2 10 أحرف';
+
+  @override
+  String get customersLocationRequired => 'موقع العميل مطلوب';
+
+  @override
+  String get customersSelectSeriesRequired => 'يرجى اختيار السلسلة';
+
+  @override
+  String get customersSelectChannelBpRequired => 'يرجى اختيار عميل قناة BP';
+
+  @override
+  String get customersSelectAreaRequired => 'يرجى اختيار المنطقة';
+
+  @override
+  String get customersSelectZoneRequired => 'يرجى اختيار النطاق';
+
+  @override
+  String get customersSelectStateRequired => 'يرجى اختيار المحافظة / الولاية';
+
+  @override
+  String get customersSelectCityRequired => 'يرجى اختيار المدينة';
+
+  @override
+  String get customersSelectRegionRequired => 'يرجى اختيار المنطقة الفرعية';
+
+  @override
+  String get customersSelectCustomerTypeRequired => 'يرجى اختيار نوع العميل';
+
+  @override
   String get customersFieldGov => 'المحافظة';
 
   @override

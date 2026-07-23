@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -21,6 +22,8 @@ import 'package:sales_medical_app_mobile/features/customers/domain/entities/cust
 import 'package:sales_medical_app_mobile/features/customers/domain/usecases/get_master_data_options_usecase.dart';
 import 'package:sales_medical_app_mobile/features/customers/presentation/cubit/customers_cubit.dart';
 
+enum _CustomerPhoneLineKind { mobile, landLine }
+
 class CustomersPage extends StatefulWidget {
   const CustomersPage({super.key, this.showScaffold = true});
 
@@ -38,6 +41,7 @@ class _CustomersPageState extends State<CustomersPage> {
   final _mapsLinkController = TextEditingController();
   final _phone1Controller = TextEditingController();
   final _phone2Controller = TextEditingController();
+  final _vatNumberController = TextEditingController();
   final _addressController = TextEditingController();
 
   CustomerSeriesModel? _selectedSeries;
@@ -48,6 +52,8 @@ class _CustomersPageState extends State<CustomersPage> {
   MasterDataOptionModel? _selectedCity;
   MasterDataOptionModel? _selectedRegion;
   MasterDataOptionModel? _selectedCustomerType;
+  _CustomerPhoneLineKind _phone1Kind = _CustomerPhoneLineKind.mobile;
+  _CustomerPhoneLineKind _phone2Kind = _CustomerPhoneLineKind.mobile;
   double? _selectedLatitude;
   double? _selectedLongitude;
   int _mapsLookupRequestId = 0;
@@ -70,6 +76,7 @@ class _CustomersPageState extends State<CustomersPage> {
     _mapsLinkController.dispose();
     _phone1Controller.dispose();
     _phone2Controller.dispose();
+    _vatNumberController.dispose();
     _addressController.dispose();
     super.dispose();
   }
@@ -659,7 +666,135 @@ class _CustomersPageState extends State<CustomersPage> {
     });
   }
 
+  void _showValidationSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 4),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  static const _mobilePrefix = '2';
+
+  String _phoneApiValue(String digits, _CustomerPhoneLineKind kind) {
+    if (kind == _CustomerPhoneLineKind.mobile) {
+      return '$_mobilePrefix$digits';
+    }
+    return digits;
+  }
+
+  String? _validatePhoneField(
+    String? value,
+    _CustomerPhoneLineKind kind,
+    {
+    required bool required,
+    required AppLocalizations l10n,
+  }) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) {
+      return required ? l10n.customersFieldRequired : null;
+    }
+    if (!RegExp(r'^\d+$').hasMatch(text)) {
+      return l10n.customersPhoneDigitsOnly;
+    }
+    final maxLen =
+        kind == _CustomerPhoneLineKind.mobile ? 11 : 10;
+    if (text.length > maxLen) {
+      return l10n.customersPhoneMaxLengthInvalid(maxLen);
+    }
+    return null;
+  }
+
+  void _showPhoneKindPicker({
+    required _CustomerPhoneLineKind current,
+    required TextEditingController controller,
+    required ValueChanged<_CustomerPhoneLineKind> onKindChanged,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.smartphone_outlined),
+                title: Text(l10n.customersPhoneKindMobile),
+                trailing:
+                    current == _CustomerPhoneLineKind.mobile
+                        ? const Icon(Icons.check, color: AppColors.primary)
+                        : null,
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  if (current == _CustomerPhoneLineKind.mobile) return;
+                  controller.clear();
+                  onKindChanged(_CustomerPhoneLineKind.mobile);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.phone_in_talk_outlined),
+                title: Text(l10n.customersPhoneKindLandLine),
+                trailing:
+                    current == _CustomerPhoneLineKind.landLine
+                        ? const Icon(Icons.check, color: AppColors.primary)
+                        : null,
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  if (current == _CustomerPhoneLineKind.landLine) return;
+                  controller.clear();
+                  onKindChanged(_CustomerPhoneLineKind.landLine);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  bool _validateRequiredPickers(AppLocalizations l10n) {
+    if (_selectedSeries == null) {
+      _showValidationSnackBar(l10n.customersSelectSeriesRequired);
+      return false;
+    }
+    if (_selectedArea == null) {
+      _showValidationSnackBar(l10n.customersSelectAreaRequired);
+      return false;
+    }
+    if (_selectedZone == null) {
+      _showValidationSnackBar(l10n.customersSelectZoneRequired);
+      return false;
+    }
+    if (_selectedState == null) {
+      _showValidationSnackBar(l10n.customersSelectStateRequired);
+      return false;
+    }
+    if (_selectedCity == null) {
+      _showValidationSnackBar(l10n.customersSelectCityRequired);
+      return false;
+    }
+    if (_selectedRegion == null) {
+      _showValidationSnackBar(l10n.customersSelectRegionRequired);
+      return false;
+    }
+    if (_selectedCustomerType == null) {
+      _showValidationSnackBar(l10n.customersSelectCustomerTypeRequired);
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (!_validateRequiredPickers(l10n)) return;
     if (!_formKey.currentState!.validate()) return;
     final link = _mapsLinkController.text.trim();
     var latitude = _selectedLatitude;
@@ -675,75 +810,59 @@ class _CustomersPageState extends State<CustomersPage> {
             _selectedLongitude = resolved.lng;
           });
         }
+      } else if (mounted) {
+        _showValidationSnackBar(l10n.customersInvalidMapsLink);
+        return;
       }
     }
-    if (link.isNotEmpty && (latitude == null || longitude == null)) {
+    if (latitude == null || longitude == null) {
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.customersInvalidMapsLink),
-          duration: const Duration(seconds: 4),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _showValidationSnackBar(l10n.customersLocationRequired);
       return;
     }
     if (!mounted) return;
     final cubit = context.read<CustomersCubit>();
-    final locationPoint =
-        (latitude != null && longitude != null)
-            ? '${latitude.toStringAsFixed(6)},${longitude.toStringAsFixed(6)}'
-            : null;
-    final formattedLocPnt =
-        (latitude != null && longitude != null)
-            ? '($latitude,$longitude)'
-            : null;
+    final formattedLocPnt = '($latitude,$longitude)';
+    final mapsLink =
+        link.isNotEmpty
+            ? link
+            : 'https://www.google.com/maps?q=$latitude,$longitude';
     final body = CreateErpCustomerRequestModel(
-      series: _selectedSeries != null ? '${_selectedSeries!.series}' : null,
-      cardName:
-          _cardNameController.text.trim().isEmpty
-              ? null
-              : _cardNameController.text.trim(),
+      series: '${_selectedSeries!.series}',
+      cardName: _cardNameController.text.trim(),
       cardType: 'L',
-      cardForeignName:
-          _cardForeignNameController.text.trim().isEmpty
-              ? null
-              : _cardForeignNameController.text.trim(),
+      cardForeignName: _cardForeignNameController.text.trim(),
       channelBP:
           _channelBPController.text.trim().isEmpty
               ? null
               : _channelBPController.text.trim(),
-      uNArea: _selectedArea?.name,
-      uZone: _selectedZone?.name,
-      uS: _selectedState?.name,
-      uC: _selectedCity?.name,
-      uRegion: _selectedRegion?.name,
-      uLocPnt: formattedLocPnt ?? locationPoint,
-      uGLink:
-          link.isEmpty
-              ? null
-              : link,
-      phone1:
-          _phone1Controller.text.trim().isEmpty
-              ? null
-              : _phone1Controller.text.trim(),
+      uNArea: _selectedArea!.name,
+      uZone: _selectedZone!.name,
+      uS: _selectedState!.name,
+      uC: _selectedCity!.name,
+      uRegion: _selectedRegion!.name,
+      uLocPnt: formattedLocPnt,
+      uGLink: mapsLink,
+      phone1: _phoneApiValue(_phone1Controller.text.trim(), _phone1Kind),
       phone2:
           _phone2Controller.text.trim().isEmpty
               ? null
-              : _phone2Controller.text.trim(),
-      address:
-          _addressController.text.trim().isEmpty
+              : _phoneApiValue(_phone2Controller.text.trim(), _phone2Kind),
+      address: _addressController.text.trim(),
+      uCusTyp: _selectedCustomerType!.code,
+      vatNumber:
+          _vatNumberController.text.trim().isEmpty
               ? null
-              : _addressController.text.trim(),
-      uCusTyp: _selectedCustomerType?.code,
+              : _vatNumberController.text.trim(),
     );
     final created = await cubit.createCustomer(body);
     if (mounted && created != null) {
       final l10n = AppLocalizations.of(context)!;
       final code = created['code']?.toString().trim() ?? '';
-      final name = created['name']?.toString().trim() ?? '';
+      final name =
+          created['name']?.toString().trim().isNotEmpty == true
+              ? created['name']!.toString().trim()
+              : _cardNameController.text.trim();
       final String message =
           (code.isNotEmpty || name.isNotEmpty)
               ? l10n.customersCustomerCreatedWithDetails(
@@ -757,7 +876,13 @@ class _CustomersPageState extends State<CustomersPage> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      _clearForm();
+      // Return code/name so the list screen can search for the new lead.
+      final searchHint = code.isNotEmpty ? code : name;
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop(searchHint.isEmpty ? null : searchHint);
+      } else {
+        _clearForm();
+      }
     }
   }
 
@@ -771,6 +896,8 @@ class _CustomersPageState extends State<CustomersPage> {
       _selectedCity = null;
       _selectedRegion = null;
       _selectedCustomerType = null;
+      _phone1Kind = _CustomerPhoneLineKind.mobile;
+      _phone2Kind = _CustomerPhoneLineKind.mobile;
       _selectedLatitude = null;
       _selectedLongitude = null;
     });
@@ -780,6 +907,7 @@ class _CustomersPageState extends State<CustomersPage> {
     _mapsLinkController.clear();
     _phone1Controller.clear();
     _phone2Controller.clear();
+    _vatNumberController.clear();
     _addressController.clear();
   }
 
@@ -1010,8 +1138,16 @@ class _CustomersPageState extends State<CustomersPage> {
               const SizedBox(height: 12),
               _buildDropdown(l10n),
               const SizedBox(height: 16),
-              _buildField(l10n.customersFieldName, _cardNameController),
-              _buildField(l10n.customersFieldArabicName, _cardForeignNameController),
+              _buildField(
+                l10n.customersFieldName,
+                _cardNameController,
+                required: true,
+              ),
+              _buildField(
+                l10n.customersFieldArabicName,
+                _cardForeignNameController,
+                required: true,
+              ),
               _buildChannelBPPicker(l10n),
               const SizedBox(height: 12),
               Text(
@@ -1119,9 +1255,33 @@ class _CustomersPageState extends State<CustomersPage> {
               _buildCityPicker(l10n),
               _buildRegionPicker(l10n),
               _buildCustomerTypePicker(),
-              _buildField(l10n.customersFieldAddress, _addressController),
-              _buildField(l10n.customersFieldPhone1, _phone1Controller),
-              _buildField(l10n.customersFieldPhone2, _phone2Controller),
+              _buildField(
+                l10n.customersFieldAddress,
+                _addressController,
+                required: true,
+              ),
+              _buildCustomerPhoneField(
+                l10n: l10n,
+                label: l10n.customersFieldPhone1,
+                controller: _phone1Controller,
+                kind: _phone1Kind,
+                required: true,
+                onKindChanged:
+                    (k) => setState(() => _phone1Kind = k),
+              ),
+              _buildCustomerPhoneField(
+                l10n: l10n,
+                label: l10n.customersFieldPhone2,
+                controller: _phone2Controller,
+                kind: _phone2Kind,
+                required: false,
+                onKindChanged:
+                    (k) => setState(() => _phone2Kind = k),
+              ),
+              _buildField(
+                l10n.customersFieldVatNumber,
+                _vatNumberController,
+              ),
               const SizedBox(height: 24),
               BlocBuilder<CustomersCubit, CustomersState>(
                 buildWhen: (p, c) => p.isCreating != c.isCreating,
@@ -1443,6 +1603,7 @@ class _CustomersPageState extends State<CustomersPage> {
                     ),
                   )
                   .toList(),
+          validator: (v) => v == null ? l10n.customersSelectSeriesRequired : null,
           onChanged: (v) => setState(() => _selectedSeries = v),
         );
       },
@@ -1453,16 +1614,139 @@ class _CustomersPageState extends State<CustomersPage> {
     String label,
     TextEditingController controller, {
     String? hint,
+    Widget? prefixIcon,
+    bool required = false,
+    int? maxLength,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
+        maxLength: maxLength,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
         decoration: InputDecoration(
-          labelText: label,
+          labelText: required ? '$label *' : label,
           hintText: hint,
+          prefixIcon: prefixIcon,
+          prefixIconConstraints:
+              prefixIcon != null
+                  ? const BoxConstraints(minWidth: 40, minHeight: 0)
+                  : null,
           border: const OutlineInputBorder(),
+          counterText: maxLength != null ? '' : null,
         ),
+        validator: (value) {
+          if (required && (value == null || value.trim().isEmpty)) {
+            return l10n.customersFieldRequired;
+          }
+          if (validator != null) {
+            return validator(value);
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildCustomerPhoneField({
+    required AppLocalizations l10n,
+    required String label,
+    required TextEditingController controller,
+    required _CustomerPhoneLineKind kind,
+    required bool required,
+    required ValueChanged<_CustomerPhoneLineKind> onKindChanged,
+  }) {
+    final isMobile = kind == _CustomerPhoneLineKind.mobile;
+    final maxLength = isMobile ? 11 : 10;
+    final hint = '0123456789';
+    final kindLabel =
+        isMobile ? l10n.customersPhoneKindMobile : l10n.customersPhoneKindLandLine;
+
+    Widget? prefixIcon;
+    if (isMobile) {
+      prefixIcon = const Padding(
+        padding: EdgeInsets.only(left: 12, right: 4),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          widthFactor: 1,
+          child: Text(
+            _mobilePrefix,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        maxLength: maxLength,
+        keyboardType: TextInputType.phone,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        decoration: InputDecoration(
+          labelText: required ? '$label *' : label,
+          hintText: hint,
+          prefixIcon: prefixIcon,
+          prefixIconConstraints:
+              prefixIcon != null
+                  ? const BoxConstraints(minWidth: 40, minHeight: 0)
+                  : null,
+          suffixIcon: InkWell(
+            onTap:
+                () => _showPhoneKindPicker(
+                  current: kind,
+                  controller: controller,
+                  onKindChanged: onKindChanged,
+                ),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isMobile ? Icons.smartphone_outlined : Icons.phone_in_talk_outlined,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    kindLabel,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_drop_down,
+                    size: 20,
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          border: const OutlineInputBorder(),
+          counterText: '',
+        ),
+        validator:
+            (value) => _validatePhoneField(
+              value,
+              kind,
+              required: required,
+              l10n: l10n,
+            ),
       ),
     );
   }

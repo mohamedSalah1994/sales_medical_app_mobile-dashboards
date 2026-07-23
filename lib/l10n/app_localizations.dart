@@ -1850,6 +1850,120 @@ abstract class AppLocalizations {
   /// **'Phone 2'**
   String get customersFieldPhone2;
 
+  /// No description provided for @customersPhoneKindMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get customersPhoneKindMobile;
+
+  /// No description provided for @customersPhoneKindLandLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Land line'**
+  String get customersPhoneKindLandLine;
+
+  /// No description provided for @customersPhoneMobileInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 11 digits after 2 (12 total)'**
+  String get customersPhoneMobileInvalid;
+
+  /// No description provided for @customersPhoneLandLineInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter exactly 10 digits for land line'**
+  String get customersPhoneLandLineInvalid;
+
+  /// No description provided for @customersPhoneDigitsOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter digits only'**
+  String get customersPhoneDigitsOnly;
+
+  /// No description provided for @customersPhoneMaxLengthInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at most {max} digits'**
+  String customersPhoneMaxLengthInvalid(int max);
+
+  /// No description provided for @customersFieldVatNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'VAT Number'**
+  String get customersFieldVatNumber;
+
+  /// No description provided for @customersFieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get customersFieldRequired;
+
+  /// No description provided for @customersPhone1Invalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 11 digits after 2 (12 total, e.g. 01234567890)'**
+  String get customersPhone1Invalid;
+
+  /// No description provided for @customersPhone2Invalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone 2 must be at most 10 characters'**
+  String get customersPhone2Invalid;
+
+  /// No description provided for @customersLocationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer location is required'**
+  String get customersLocationRequired;
+
+  /// No description provided for @customersSelectSeriesRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a series'**
+  String get customersSelectSeriesRequired;
+
+  /// No description provided for @customersSelectChannelBpRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a channel BP customer'**
+  String get customersSelectChannelBpRequired;
+
+  /// No description provided for @customersSelectAreaRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select an area'**
+  String get customersSelectAreaRequired;
+
+  /// No description provided for @customersSelectZoneRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a zone'**
+  String get customersSelectZoneRequired;
+
+  /// No description provided for @customersSelectStateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a state'**
+  String get customersSelectStateRequired;
+
+  /// No description provided for @customersSelectCityRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a city'**
+  String get customersSelectCityRequired;
+
+  /// No description provided for @customersSelectRegionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a region'**
+  String get customersSelectRegionRequired;
+
+  /// No description provided for @customersSelectCustomerTypeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a customer type'**
+  String get customersSelectCustomerTypeRequired;
+
   /// No description provided for @customersFieldGov.
   ///
   /// In en, this message translates to:
