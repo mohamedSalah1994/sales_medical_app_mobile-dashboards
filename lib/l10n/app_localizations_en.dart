@@ -81,7 +81,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createNewUser => 'Create New User';
 
   @override
-  String get fillDetailsToCreateUser => 'Fill in the details to create a new user account';
+  String get fillDetailsToCreateUser =>
+      'Fill in the details to create a new user account';
 
   @override
   String get createUserButton => 'Create User';
@@ -404,7 +405,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteJourneyPlan => 'Delete Journey Plan';
 
   @override
-  String get deleteJourneyPlanConfirmation => 'Are you sure you want to delete this journey plan?';
+  String get deleteJourneyPlanConfirmation =>
+      'Are you sure you want to delete this journey plan?';
 
   @override
   String get yes => 'Yes';
@@ -440,10 +442,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saving => 'Saving...';
 
   @override
-  String get pleaseSelectStartAndEndDates => 'Please select start and end dates';
+  String get pleaseSelectStartAndEndDates =>
+      'Please select start and end dates';
 
   @override
-  String get pleaseCreateJourneyPlanFirst => 'Please create a journey plan first';
+  String get pleaseCreateJourneyPlanFirst =>
+      'Please create a journey plan first';
 
   @override
   String get pleaseSelectCustomer => 'Please select a customer';
@@ -474,13 +478,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journeyPlanAddVisitTitle => 'Add Visit';
 
   @override
-  String get journeyPlanCreateFirstBeforeVisits => 'Please create a journey plan in Step 1 before adding visits.';
+  String get journeyPlanCreateFirstBeforeVisits =>
+      'Please create a journey plan in Step 1 before adding visits.';
 
   @override
-  String get journeyPlanStep2SubtitleExisting => 'View existing visits and add new ones to your journey plan';
+  String get journeyPlanStep2SubtitleExisting =>
+      'View existing visits and add new ones to your journey plan';
 
   @override
-  String get journeyPlanStep2SubtitleNew => 'Create a visit for your journey plan';
+  String get journeyPlanStep2SubtitleNew =>
+      'Create a visit for your journey plan';
 
   @override
   String get addNewVisit => 'Add New Visit';
@@ -588,13 +595,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get visitSurveyNoSurveys => 'No surveys available.';
 
   @override
-  String get visitSurveyNoSubmissions => 'No survey submissions for this visit.';
+  String get visitSurveyNoSubmissions =>
+      'No survey submissions for this visit.';
 
   @override
-  String get visitSurveyNoQuestions => 'This survey has no questions with IDs from the server. It cannot be answered in the app.';
+  String get visitSurveyNoQuestions =>
+      'This survey has no questions with IDs from the server. It cannot be answered in the app.';
 
   @override
-  String get visitActionsEmpty => 'No visit actions or answered survey responses yet.';
+  String get visitActionsEmpty =>
+      'No visit actions or answered survey responses yet.';
 
   @override
   String get visitSurveySubmitted => 'Survey submitted.';
@@ -606,16 +616,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get visitSurveyRequired => 'Please answer all required questions.';
 
   @override
-  String get visitSurveyAnswerAtLeastTwo => 'Please answer at least two questions before submitting.';
+  String get visitSurveyAnswerAtLeastTwo =>
+      'Please answer at least two questions before submitting.';
 
   @override
-  String get visitSurveyAnswerAllQuestions => 'Please answer every question before submitting.';
+  String get visitSurveyAnswerAllQuestions =>
+      'Please answer every question before submitting.';
 
   @override
-  String get visitSurveyAnswerAllHint => 'Answer all questions in the card below, then tap Submit once to send your response.';
+  String get visitSurveyAnswerAllHint =>
+      'Answer all questions in the card below, then tap Submit once to send your response.';
 
   @override
-  String get visitSurveyNotActive => 'This survey is not active or is outside its validity period.';
+  String get visitSurveyNotActive =>
+      'This survey is not active or is outside its validity period.';
 
   @override
   String get visitSurveyRecordedActions => 'Recorded actions';
@@ -637,7 +651,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readyForDeliveryTitle => 'Orders ready for delivery';
 
   @override
-  String get readyForDeliverySearchHint => 'Search by doc no., customer code or name…';
+  String get readyForDeliverySearchHint =>
+      'Search by doc no., customer code or name…';
 
   @override
   String get readyForDeliveryEmpty => 'No orders ready for delivery.';
@@ -649,7 +664,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readyForReturnTitle => 'Deliveries ready for return';
 
   @override
-  String get readyForReturnSearchHint => 'Search by doc no., customer code or name…';
+  String get readyForReturnSearchHint =>
+      'Search by doc no., customer code or name…';
 
   @override
   String get readyForReturnEmpty => 'No deliveries ready for return.';
@@ -679,7 +695,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inventorySearchByDocEntry => 'Search by document entry';
 
   @override
-  String get inventoryListHint => 'Enter a document entry above to open a transfer, or use the button to create a new stock transfer.';
+  String get inventoryListHint =>
+      'Enter a document entry above to open a transfer, or use the button to create a new stock transfer.';
 
   @override
   String get inventoryFabCreate => 'Create';
@@ -700,13 +717,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inventorySelectWarehouse => 'Select warehouse';
 
   @override
-  String get inventorySelectBothWarehouses => 'Select both from and to warehouses.';
+  String get inventorySelectBothWarehouses =>
+      'Select both from and to warehouses.';
 
   @override
-  String get inventoryWarehousesMustDiffer => 'From and to warehouses must be different.';
+  String get inventoryWarehousesMustDiffer =>
+      'From and to warehouses must be different.';
 
   @override
-  String get inventorySelectFromWarehouseFirst => 'Select a from warehouse before adding items.';
+  String get inventorySelectFromWarehouseFirst =>
+      'Select a from warehouse before adding items.';
 
   @override
   String get inventoryAddItems => 'Add items';
@@ -729,7 +749,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get inventoryQuantityMustBePositive => 'Quantity must be greater than zero.';
+  String get inventoryQuantityMustBePositive =>
+      'Quantity must be greater than zero.';
 
   @override
   String get inventoryCreateFailed => 'Could not create transfer.';
@@ -791,7 +812,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inventoryCounting => 'Inventory counting';
 
   @override
-  String get inventoryCountingListHint => 'Enter a document entry above to open a count, or use Create to start a new inventory count.';
+  String get inventoryCountingListHint =>
+      'Enter a document entry above to open a count, or use Create to start a new inventory count.';
 
   @override
   String get inventoryCountingNew => 'New inventory count';
@@ -809,7 +831,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inventoryColWarehouse => 'Warehouse';
 
   @override
-  String get inventoryCountingCreateFailed => 'Could not create inventory count.';
+  String get inventoryCountingCreateFailed =>
+      'Could not create inventory count.';
 
   @override
   String get inventoryCountingSuccessTitle => 'Success';
@@ -820,16 +843,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get inventoryCountingNoDefaultWarehouse => 'Set a default warehouse in your profile before creating a count.';
+  String get inventoryCountingNoDefaultWarehouse =>
+      'Set a default warehouse in your profile before creating a count.';
 
   @override
-  String get inventoryCountedQtyNonNegative => 'Counted quantity cannot be negative.';
+  String get inventoryCountedQtyNonNegative =>
+      'Counted quantity cannot be negative.';
 
   @override
   String get customersPickCustomerLocationTitle => 'Pick customer location';
 
   @override
-  String get customersPickLocationMapHint => 'Tap anywhere on the map to choose the customer location.';
+  String get customersPickLocationMapHint =>
+      'Tap anywhere on the map to choose the customer location.';
 
   @override
   String get customersSearchAreaHint => 'Search area';
@@ -838,7 +864,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customersSearchAreaTooltip => 'Search area';
 
   @override
-  String get customersCouldNotSearchArea => 'Could not search this area right now';
+  String get customersCouldNotSearchArea =>
+      'Could not search this area right now';
 
   @override
   String customersLatLngLine(String lat, String lng) {
@@ -846,10 +873,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get customersGoogleMapsOpenedSnackbar => 'Google Maps opened. Select a location, tap Share, copy the link, and paste it in the field below.';
+  String get customersGoogleMapsOpenedSnackbar =>
+      'Google Maps opened. Select a location, tap Share, copy the link, and paste it in the field below.';
 
   @override
-  String get customersInvalidMapsLink => 'Invalid Google Maps link. Please paste a link that contains coordinates.';
+  String get customersInvalidMapsLink =>
+      'Invalid Google Maps link. Please paste a link that contains coordinates.';
 
   @override
   String get customersCustomerCreatedSuccess => 'Customer created successfully';
@@ -863,7 +892,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customersCustomerLocationSection => 'Customer location';
 
   @override
-  String get customersLocationHowTo => 'To choose a location: open Google Maps using the button below, select the customer location on the map, tap Share, copy the link, then paste it in the field below.';
+  String get customersLocationHowTo =>
+      'To choose a location: open Google Maps using the button below, select the customer location on the map, tap Share, copy the link, then paste it in the field below.';
 
   @override
   String get customersGoogleMapsLinkLabel => 'Google Maps link';
@@ -1037,34 +1067,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openSettings => 'Open Settings';
 
   @override
-  String get locationServicesDisabled => 'Location services are disabled. Please enable location services in your device settings.';
+  String get locationServicesDisabled =>
+      'Location services are disabled. Please enable location services in your device settings.';
 
   @override
-  String get locationPermissionDenied => 'Location permissions are denied. Please grant location permission to use this feature.';
+  String get locationPermissionDenied =>
+      'Location permissions are denied. Please grant location permission to use this feature.';
 
   @override
-  String get locationPermissionDeniedForever => 'Location permissions are permanently denied. Please enable them in app settings.';
+  String get locationPermissionDeniedForever =>
+      'Location permissions are permanently denied. Please enable them in app settings.';
 
   @override
-  String get couldNotOpenGoogleMaps => 'Could not open Google Maps. Please ensure you have a browser or Google Maps installed.';
+  String get couldNotOpenGoogleMaps =>
+      'Could not open Google Maps. Please ensure you have a browser or Google Maps installed.';
 
   @override
-  String get googleMapsOpenedPasteLinkAbove => 'Google Maps opened. Select a location, tap Share, copy the link, and paste it in the field above.';
+  String get googleMapsOpenedPasteLinkAbove =>
+      'Google Maps opened. Select a location, tap Share, copy the link, and paste it in the field above.';
 
   @override
   String get standaloneGoogleMapsLinkOptional => 'Google Maps Link (Optional)';
 
   @override
-  String get standaloneGoogleMapsHintAuto => 'Google Maps link will be generated automatically';
+  String get standaloneGoogleMapsHintAuto =>
+      'Google Maps link will be generated automatically';
 
   @override
-  String get standaloneMapsLocationTip => 'Tip: Tap the location icon to get your current location, or the map icon to open Google Maps and pick a location manually.';
+  String get standaloneMapsLocationTip =>
+      'Tip: Tap the location icon to get your current location, or the map icon to open Google Maps and pick a location manually.';
 
   @override
   String get tooltipGetCurrentLocation => 'Get current location';
 
   @override
-  String get tooltipOpenMapsSelectLocation => 'Open Google Maps to select location';
+  String get tooltipOpenMapsSelectLocation =>
+      'Open Google Maps to select location';
 
   @override
   String get standaloneVisitHistoryTab => 'History';
@@ -1127,7 +1165,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamMapOpenInMaps => 'Open in maps';
 
   @override
-  String get customersSearchByNameOrCode => 'Search customers by name or code...';
+  String get customersSearchByNameOrCode =>
+      'Search customers by name or code...';
 
   @override
   String get customersNoCustomersYet => 'No customers yet';

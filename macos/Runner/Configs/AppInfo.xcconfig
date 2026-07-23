@@ -8,7 +8,7 @@
 PRODUCT_NAME = sales_medical_app_mobile
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.salesmedical.salesMedicalAppMobile
+PRODUCT_BUNDLE_IDENTIFIER = com.salesmedical.salesMedical
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.salesmedical. All rights reserved.
