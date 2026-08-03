@@ -4,8 +4,9 @@ abstract class AuthRepository {
   Future<LoginResponse> login(
     String username,
     String password,
-    bool rememberMe,
-  );
+    bool rememberMe, {
+    String? version,
+  });
   Future<LoginResponse?> getStoredLoginData();
   Future<String?> getStoredDefaultWarehouseCode();
   Future<void> logout();

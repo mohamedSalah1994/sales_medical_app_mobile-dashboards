@@ -16,6 +16,7 @@ import 'package:sales_medical_app_mobile/features/auth/domain/usecases/login_use
 import 'package:sales_medical_app_mobile/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:sales_medical_app_mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:sales_medical_app_mobile/features/journey_plan/presentation/cubit/journey_plan_cubit.dart';
+import 'package:sales_medical_app_mobile/features/journey_plan/presentation/cubit/journey_plan_state.dart';
 import 'package:sales_medical_app_mobile/features/journey_plan/presentation/widgets/active_visit_banner.dart';
 import 'package:sales_medical_app_mobile/l10n/app_localizations.dart';
 
@@ -223,34 +224,69 @@ class _AppViewState extends State<_AppView> with WidgetsBindingObserver {
                       : TextDirection.ltr,
               child: BotToastInit()(
                 context,
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    content,
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: BlocBuilder<AuthCubit, AuthState>(
-                        buildWhen:
-                            (p, c) => p.isAuthenticated != c.isAuthenticated,
-                        builder: (context, authState) {
-                          if (!authState.isAuthenticated) {
-                            return const SizedBox.shrink();
-                          }
-                          return SafeArea(
-                            bottom: false,
-                            child: ActiveVisitBanner(
-                              floating: true,
-                              onOpen:
-                                  () =>
-                                      openActiveVisitFromGlobalOverlay(context),
+                BlocBuilder<AuthCubit, AuthState>(
+                  buildWhen:
+                      (p, c) => p.isAuthenticated != c.isAuthenticated,
+                  builder: (context, authState) {
+                    return BlocBuilder<JourneyPlanCubit, JourneyPlanState>(
+                      buildWhen:
+                          (prev, curr) =>
+                              prev.visits != curr.visits ||
+                              prev.journeyPlan?.id != curr.journeyPlan?.id ||
+                              prev.journeyPlan?.stops !=
+                                  curr.journeyPlan?.stops ||
+                              prev.actualStartTimestampMs !=
+                                  curr.actualStartTimestampMs ||
+                              prev.activeVisitElapsedSeconds !=
+                                  curr.activeVisitElapsedSeconds ||
+                              prev.activeVisitSnapshotTimestampMs !=
+                                  curr.activeVisitSnapshotTimestampMs ||
+                              prev.pausedVisitElapsedSeconds !=
+                                  curr.pausedVisitElapsedSeconds ||
+                              prev.totalPausedDurationSeconds !=
+                                  curr.totalPausedDurationSeconds,
+                      builder: (context, journeyState) {
+                        final showBanner =
+                            authState.isAuthenticated &&
+                            activeVisitBannerShouldShow(journeyState);
+                        final media = MediaQuery.of(context);
+                        // Place banner above the navigator so it never covers
+                        // the AppBar hamburger / back actions. Zero top inset
+                        // on content while the banner owns the status bar.
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (showBanner)
+                              SafeArea(
+                                bottom: false,
+                                child: ActiveVisitBanner(
+                                  floating: true,
+                                  onOpen:
+                                      () => openActiveVisitFromGlobalOverlay(
+                                        context,
+                                      ),
+                                ),
+                              ),
+                            Expanded(
+                              child: MediaQuery(
+                                data:
+                                    showBanner
+                                        ? media.copyWith(
+                                          padding: media.padding.copyWith(
+                                            top: 0,
+                                          ),
+                                          viewPadding: media.viewPadding
+                                              .copyWith(top: 0),
+                                        )
+                                        : media,
+                                child: content,
+                              ),
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                          ],
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             );

@@ -1198,6 +1198,10 @@ class _IncomingPaymentCreatePageState extends State<IncomingPaymentCreatePage> {
                       color: AppColors.textPrimary,
                     ),
                   ),
+                if (_selectedCustomer != null && _invoices.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _buildOpenInvoiceTotalsInfo(),
+                ],
                 const SizedBox(height: 10),
                 Expanded(child: _buildInvoicesTable()),
                 const SizedBox(height: 10),
@@ -1266,6 +1270,50 @@ class _IncomingPaymentCreatePageState extends State<IncomingPaymentCreatePage> {
     );
   }
 
+  Widget _buildOpenInvoiceTotalsInfo() {
+    final netDue = _invoices.fold<double>(0, (sum, i) => sum + i.uNetDue);
+    final totBonus = _invoices.fold<double>(0, (sum, i) => sum + i.uTotBonus);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.info_outline,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Net Due: ${netDue.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              'Tot Bonus: ${totBonus.toStringAsFixed(2)}',
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInvoicesTable() {
     if (_error != null && _invoices.isEmpty) {
       return Center(
@@ -1291,7 +1339,7 @@ class _IncomingPaymentCreatePageState extends State<IncomingPaymentCreatePage> {
       child: Table(
         border: TableBorder.all(color: AppColors.border),
         columnWidths: {
-          for (var i = 0; i < 7; i++) i: const IntrinsicColumnWidth(),
+          for (var i = 0; i < 9; i++) i: const IntrinsicColumnWidth(),
         },
         children: [
           const TableRow(
@@ -1303,6 +1351,8 @@ class _IncomingPaymentCreatePageState extends State<IncomingPaymentCreatePage> {
               _TableCell('Total', style: headerStyle),
               _TableCell('Paid', style: headerStyle),
               _TableCell('Balance', style: headerStyle),
+              _TableCell('Net Due', style: headerStyle),
+              _TableCell('Tot Bonus', style: headerStyle),
               _TableCell('Applied', style: headerStyle),
             ],
           ),
@@ -1320,6 +1370,14 @@ class _IncomingPaymentCreatePageState extends State<IncomingPaymentCreatePage> {
                 _TableCell(invoice.paid.toStringAsFixed(2), style: bodyStyle),
                 _TableCell(
                   invoice.balanceDue.toStringAsFixed(2),
+                  style: bodyStyle,
+                ),
+                _TableCell(
+                  invoice.uNetDue.toStringAsFixed(2),
+                  style: bodyStyle,
+                ),
+                _TableCell(
+                  invoice.uTotBonus.toStringAsFixed(2),
                   style: bodyStyle,
                 ),
                 Padding(
@@ -1775,6 +1833,8 @@ class _IncomingInvoice {
     required this.total,
     required this.paid,
     required this.balanceDue,
+    required this.uNetDue,
+    required this.uTotBonus,
     required this.controller,
   });
 
@@ -1785,6 +1845,8 @@ class _IncomingInvoice {
   final double total;
   final double paid;
   final double balanceDue;
+  final double uNetDue;
+  final double uTotBonus;
   final TextEditingController controller;
 
   double get appliedValue => double.tryParse(controller.text.trim()) ?? 0;
@@ -1804,6 +1866,14 @@ class _IncomingInvoice {
       total: (json['total'] as num?)?.toDouble() ?? 0,
       paid: (json['paid'] as num?)?.toDouble() ?? 0,
       balanceDue: balance,
+      uNetDue:
+          (json['U_NET_DUE'] as num?)?.toDouble() ??
+          (json['uNetDue'] as num?)?.toDouble() ??
+          0,
+      uTotBonus:
+          (json['U_TOT_BONUS'] as num?)?.toDouble() ??
+          (json['uTotBonus'] as num?)?.toDouble() ??
+          0,
       controller: TextEditingController(text: '0'),
     );
   }

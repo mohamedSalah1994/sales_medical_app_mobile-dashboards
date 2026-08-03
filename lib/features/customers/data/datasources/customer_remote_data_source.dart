@@ -4,6 +4,7 @@ import 'package:sales_medical_app_mobile/core/constants/customer_odbc_scope.dart
 import 'package:sales_medical_app_mobile/core/utils/odbc_customers_master_data_query.dart';
 import 'package:sales_medical_app_mobile/features/customers/data/models/create_erp_customer_request_model.dart';
 import 'package:sales_medical_app_mobile/features/customers/data/models/customer_series_model.dart';
+import 'package:sales_medical_app_mobile/features/customers/data/models/duplicate_customer_phone_exception.dart';
 import 'package:sales_medical_app_mobile/features/customers/data/models/master_data_option_model.dart';
 
 abstract class CustomerRemoteDataSource {
@@ -105,20 +106,27 @@ class CustomerRemoteDataSourceImpl implements CustomerRemoteDataSource {
   Future<Map<String, dynamic>> createCustomer(
     CreateErpCustomerRequestModel body,
   ) async {
-    final response = await apiService.post(
-      '/api/Erp/customers',
-      data: body.toJson(),
-    );
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to create customer');
+    try {
+      final response = await apiService.post(
+        '/api/Erp/customers',
+        data: body.toJson(),
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to create customer');
+      }
+      final data = response.data;
+      if (data is Map<String, dynamic>) return data;
+      if (data is List && data.isNotEmpty) {
+        final first = data.first;
+        if (first is Map<String, dynamic>) return first;
+      }
+      return <String, dynamic>{};
+    } catch (e) {
+      if (DuplicateCustomerPhoneException.isDuplicatePhoneError(e)) {
+        throw DuplicateCustomerPhoneException.fromError(e);
+      }
+      rethrow;
     }
-    final data = response.data;
-    if (data is Map<String, dynamic>) return data;
-    if (data is List && data.isNotEmpty) {
-      final first = data.first;
-      if (first is Map<String, dynamic>) return first;
-    }
-    return <String, dynamic>{};
   }
 
   @override

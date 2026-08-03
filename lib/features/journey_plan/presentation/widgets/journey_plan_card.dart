@@ -30,71 +30,6 @@ class JourneyPlanCard extends StatelessWidget {
     );
   }
 
-  void _onLongPress(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Row(
-              children: [
-                Icon(Icons.delete_outline, color: AppColors.error, size: 24),
-                const SizedBox(width: 12),
-                const Text(
-                  'Delete Journey Plan',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            content: const Text(
-              'Are you sure you want to delete this journey plan? This action cannot be undone.',
-              style: TextStyle(fontSize: 14),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(dialogContext).pop();
-                  final cubit = context.read<JourneyPlanCubit>();
-                  final authState = context.read<AuthCubit>().state;
-                  final userId = authState.loginResponse?.user.id;
-
-                  if (userId != null) {
-                    final state = cubit.state;
-                    if (state.selectedTabIndex == 0) {
-                      await cubit.deleteJourneyPlan(plan.id, userId: userId);
-                    } else {
-                      await cubit.deleteJourneyPlan(
-                        plan.id,
-                        createdById: userId,
-                      );
-                    }
-                  }
-                },
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-    );
-  }
-
   bool get _hasAssignedVisit {
     return plan.stops.any(
       (stop) =>
@@ -205,12 +140,10 @@ class JourneyPlanCard extends StatelessWidget {
       pauseStartTimestampMs: timing.pauseStartTimestampMs,
     );
 
-    return GestureDetector(
-      onLongPress: () => _onLongPress(context),
-      child: InkWell(
-        onTap: () => _onTap(context),
-        borderRadius: BorderRadius.circular(16),
-        child: Card(
+    return InkWell(
+      onTap: () => _onTap(context),
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
           margin: const EdgeInsets.only(bottom: 10),
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -261,7 +194,6 @@ class JourneyPlanCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }

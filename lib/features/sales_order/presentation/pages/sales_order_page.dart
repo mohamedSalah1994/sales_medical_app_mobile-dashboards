@@ -9,6 +9,7 @@ import 'package:sales_medical_app_mobile/core/utils/format_date.dart';
 import 'package:sales_medical_app_mobile/core/utils/odbc_card_type_label.dart';
 import 'package:sales_medical_app_mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/erp_customer_model.dart';
+import 'package:sales_medical_app_mobile/features/sales_order/data/models/free_goods_option_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/sales_order_line_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/vat_code_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/presentation/cubit/sales_order_cubit.dart';
@@ -68,6 +69,7 @@ class _SalesOrderPageState extends State<SalesOrderPage> {
         }
       }
       cubit.loadVatCodes();
+      cubit.loadFreeGoodsList();
       if (widget.visitId != null) cubit.setVisitId(widget.visitId);
       if (widget.initialCardCode != null ||
           widget.initialCustomerName != null) {
@@ -233,14 +235,6 @@ class _SalesOrderPageState extends State<SalesOrderPage> {
                   onChanged:
                       (v) => context.read<SalesOrderCubit>().setRemarks(v),
                 ),
-                if (state.editingOrder != null) ...[
-                  const SizedBox(height: 10),
-                  ErpDocFieldRow(
-                    label: 'Total',
-                    value: erpDocumentTotalLabel(state.editingOrder!.docTotal),
-                    fillColor: Colors.white,
-                  ),
-                ],
                 const SizedBox(height: 80),
               ],
             ),
@@ -1033,7 +1027,7 @@ class _SalesOrderPageState extends State<SalesOrderPage> {
     }
 
     const tableTextStyle = TextStyle(fontSize: 11);
-    return Container(
+    final table = Container(
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: AppColors.border),
@@ -1046,7 +1040,7 @@ class _SalesOrderPageState extends State<SalesOrderPage> {
           border: TableBorder.all(color: AppColors.border),
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           columnWidths: {
-            for (var i = 0; i < 9; i++) i: const IntrinsicColumnWidth(),
+            for (var i = 0; i < 10; i++) i: const IntrinsicColumnWidth(),
           },
           children: [
             TableRow(
@@ -1064,6 +1058,7 @@ class _SalesOrderPageState extends State<SalesOrderPage> {
                 const _HeaderCell('Unit Price', style: tableTextStyle),
                 const _HeaderCell('UoM', style: tableTextStyle),
                 const _HeaderCell('VAT Group', style: tableTextStyle),
+                const _HeaderCell('Free', style: tableTextStyle),
               ],
             ),
             ...List.generate(state.lines.length, (i) {
@@ -1201,12 +1196,63 @@ class _SalesOrderPageState extends State<SalesOrderPage> {
                       tableTextStyle: tableTextStyle,
                     ),
                   ),
+                  _BodyCell(
+                    _FreeGoodsDropdown(
+                      line: line,
+                      lineIndex: i,
+                      options: state.freeGoodsOptions,
+                      tableTextStyle: tableTextStyle,
+                    ),
+                  ),
                 ],
               );
             }),
           ],
         ),
       ),
+    );
+
+    // Create/edit line totals: U_FREE = N → U_NET_DUE, other → U_TOT_BONUS.
+    final totals = salesOrderFreeTotals(state.lines);
+    final currency = state.lines
+        .map((l) => l.currency?.trim() ?? '')
+        .firstWhere((c) => c.isNotEmpty, orElse: () => '');
+    String formatTotal(num value) {
+      final formatted = NumberFormat.decimalPattern().format(value);
+      return currency.isEmpty ? formatted : '$formatted $currency';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        table,
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: ErpDocFieldRow(
+                label: 'Total (Free = N)',
+                value: formatTotal(totals.uNetDue),
+                fillColor: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ErpDocFieldRow(
+                label: 'Total (Free = Other)',
+                value: formatTotal(totals.uTotBonus),
+                fillColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ErpDocFieldRow(
+          label: 'Total',
+          value: formatTotal(totals.uNetDue + totals.uTotBonus),
+          fillColor: Colors.white,
+        ),
+      ],
     );
   }
 }
@@ -1383,6 +1429,65 @@ class _VatGroupDropdown extends StatelessWidget {
         ],
         onChanged: (v) {
           context.read<SalesOrderCubit>().updateLineVatGroup(lineIndex, v);
+        },
+      ),
+    );
+  }
+}
+
+/// Free goods (`U_FREE`) dropdown from GET `/api/erp/sales-orders/getFreeGoodsList`.
+class _FreeGoodsDropdown extends StatelessWidget {
+  const _FreeGoodsDropdown({
+    required this.line,
+    required this.lineIndex,
+    required this.options,
+    required this.tableTextStyle,
+  });
+
+  final SalesOrderLineModel line;
+  final int lineIndex;
+  final List<FreeGoodsOptionModel> options;
+  final TextStyle tableTextStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final seen = <String>{};
+    final distinct =
+        options
+            .where((o) => o.code.trim().isNotEmpty && seen.add(o.code))
+            .toList();
+    final codes = distinct.map((o) => o.code).toSet();
+    final value =
+        line.uFree != null &&
+                line.uFree!.isNotEmpty &&
+                codes.contains(line.uFree)
+            ? line.uFree
+            : null;
+
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: value,
+        isExpanded: true,
+        isDense: true,
+        hint: Text('—', style: tableTextStyle),
+        items: [
+          DropdownMenuItem<String>(
+            value: null,
+            child: Text('—', style: tableTextStyle),
+          ),
+          ...distinct.map(
+            (o) => DropdownMenuItem<String>(
+              value: o.code,
+              child: Text(
+                o.name?.trim().isNotEmpty == true ? o.name! : o.code,
+                style: tableTextStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+        onChanged: (v) {
+          context.read<SalesOrderCubit>().updateLineFreeGoods(lineIndex, v);
         },
       ),
     );

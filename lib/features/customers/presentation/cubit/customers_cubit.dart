@@ -1,7 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sales_medical_app_mobile/core/constants/customer_odbc_scope.dart';
+import 'package:sales_medical_app_mobile/core/network/api_error_message.dart';
 import 'package:sales_medical_app_mobile/features/customers/data/models/create_erp_customer_request_model.dart';
 import 'package:sales_medical_app_mobile/features/customers/data/models/customer_series_model.dart';
+import 'package:sales_medical_app_mobile/features/customers/data/models/duplicate_customer_phone_exception.dart';
 import 'package:sales_medical_app_mobile/features/customers/data/models/master_data_option_model.dart';
 import 'package:sales_medical_app_mobile/features/customers/domain/entities/customer.dart';
 import 'package:sales_medical_app_mobile/features/customers/domain/usecases/create_erp_customer_usecase.dart';
@@ -48,9 +50,9 @@ class CustomersCubit extends Cubit<CustomersState> {
     if (useCase == null) return;
     if (append) {
       if (state.isLoadingMore || !state.hasMore) return;
-      emit(state.copyWith(isLoadingMore: true, error: null));
+      emit(state.copyWith(isLoadingMore: true, clearError: true));
     } else {
-      emit(state.copyWith(isLoading: true, error: null));
+      emit(state.copyWith(isLoading: true, clearError: true));
     }
     try {
       final customers = await useCase(
@@ -72,40 +74,60 @@ class CustomersCubit extends Cubit<CustomersState> {
       if (isClosed) return;
       final hasMore = customers.length >= pageSize;
       if (append) {
-        emit(state.copyWith(
-          customers: [...state.customers, ...customers],
-          isLoadingMore: false,
-          hasMore: hasMore,
-          currentPage: pageNumber,
-          error: null,
-        ));
+        emit(
+          state.copyWith(
+            customers: [...state.customers, ...customers],
+            isLoadingMore: false,
+            hasMore: hasMore,
+            currentPage: pageNumber,
+            clearError: true,
+          ),
+        );
       } else {
-        emit(state.copyWith(
-          customers: customers,
-          isLoading: false,
-          hasMore: hasMore,
-          currentPage: pageNumber,
-          error: null,
-        ));
+        emit(
+          state.copyWith(
+            customers: customers,
+            isLoading: false,
+            hasMore: hasMore,
+            currentPage: pageNumber,
+            clearError: true,
+          ),
+        );
       }
     } catch (e) {
       if (!isClosed) {
+        final msg = userVisibleApiErrorMessage(e) ?? e.toString();
         if (append) {
-          emit(state.copyWith(isLoadingMore: false, error: e.toString()));
+          emit(state.copyWith(isLoadingMore: false, error: msg));
         } else {
-          emit(state.copyWith(isLoading: false, error: e.toString()));
+          emit(state.copyWith(isLoading: false, error: msg));
         }
       }
     }
   }
 
   Future<void> loadSeries() async {
-    emit(state.copyWith(isLoadingSeries: true, error: null));
+    emit(state.copyWith(isLoadingSeries: true, clearError: true));
     try {
       final list = await getCustomerSeriesUseCase();
-      if (!isClosed) emit(state.copyWith(series: list, isLoadingSeries: false, error: null));
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            series: list,
+            isLoadingSeries: false,
+            clearError: true,
+          ),
+        );
+      }
     } catch (e) {
-      if (!isClosed) emit(state.copyWith(isLoadingSeries: false, error: e.toString()));
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            isLoadingSeries: false,
+            error: userVisibleApiErrorMessage(e) ?? e.toString(),
+          ),
+        );
+      }
     }
   }
 
@@ -113,40 +135,84 @@ class CustomersCubit extends Cubit<CustomersState> {
     required MasterDataSection section,
     String? parentTerritoryId,
   }) async {
-    emit(state.copyWith(isLoadingMasterData: true, error: null));
+    emit(state.copyWith(isLoadingMasterData: true, clearError: true));
     try {
       final list = await getMasterDataOptionsUseCase(
         section: section,
         parentTerritoryId: parentTerritoryId,
       );
       if (!isClosed) {
-        emit(state.copyWith(
-          masterDataOptions: list,
-          isLoadingMasterData: false,
-          error: null,
-        ));
+        emit(
+          state.copyWith(
+            masterDataOptions: list,
+            isLoadingMasterData: false,
+            clearError: true,
+          ),
+        );
       }
     } catch (e) {
       if (!isClosed) {
-        emit(state.copyWith(isLoadingMasterData: false, error: e.toString()));
+        emit(
+          state.copyWith(
+            isLoadingMasterData: false,
+            error: userVisibleApiErrorMessage(e) ?? e.toString(),
+          ),
+        );
       }
     }
   }
 
   /// Returns the created customer data (e.g. {code, name}) on success, null on failure.
-  Future<Map<String, dynamic>?> createCustomer(CreateErpCustomerRequestModel body) async {
-    emit(state.copyWith(isCreating: true, error: null));
+  /// Rethrows [DuplicateCustomerPhoneException] so the UI can confirm and retry.
+  Future<Map<String, dynamic>?> createCustomer(
+    CreateErpCustomerRequestModel body,
+  ) async {
+    emit(
+      state.copyWith(
+        isCreating: true,
+        clearCreateError: true,
+      ),
+    );
     try {
       final created = await createErpCustomerUseCase(body);
-      if (!isClosed) emit(state.copyWith(isCreating: false, error: null));
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            isCreating: false,
+            clearCreateError: true,
+          ),
+        );
+      }
       return created;
+    } on DuplicateCustomerPhoneException {
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            isCreating: false,
+            clearCreateError: true,
+          ),
+        );
+      }
+      rethrow;
     } catch (e) {
-      if (!isClosed) emit(state.copyWith(isCreating: false, error: e.toString()));
+      final msg = userVisibleApiErrorMessage(e);
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            isCreating: false,
+            createError: msg,
+          ),
+        );
+      }
       return null;
     }
   }
 
   void clearError() {
-    emit(state.copyWith(error: null));
+    emit(state.copyWith(clearError: true));
+  }
+
+  void clearCreateError() {
+    emit(state.copyWith(clearCreateError: true));
   }
 }

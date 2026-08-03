@@ -17,6 +17,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:sales_medical_app_mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:sales_medical_app_mobile/features/customers/data/models/create_erp_customer_request_model.dart';
 import 'package:sales_medical_app_mobile/features/customers/data/models/customer_series_model.dart';
+import 'package:sales_medical_app_mobile/features/customers/data/models/duplicate_customer_phone_exception.dart';
 import 'package:sales_medical_app_mobile/features/customers/data/models/master_data_option_model.dart';
 import 'package:sales_medical_app_mobile/features/customers/domain/entities/customer.dart';
 import 'package:sales_medical_app_mobile/features/customers/domain/usecases/get_master_data_options_usecase.dart';
@@ -43,6 +44,7 @@ class _CustomersPageState extends State<CustomersPage> {
   final _phone2Controller = TextEditingController();
   final _vatNumberController = TextEditingController();
   final _addressController = TextEditingController();
+  final _phone1FocusNode = FocusNode();
 
   CustomerSeriesModel? _selectedSeries;
   Customer? _selectedChannelBPCustomer;
@@ -78,6 +80,7 @@ class _CustomersPageState extends State<CustomersPage> {
     _phone2Controller.dispose();
     _vatNumberController.dispose();
     _addressController.dispose();
+    _phone1FocusNode.dispose();
     super.dispose();
   }
 
@@ -854,8 +857,56 @@ class _CustomersPageState extends State<CustomersPage> {
           _vatNumberController.text.trim().isEmpty
               ? null
               : _vatNumberController.text.trim(),
+      confirmDuplicatePhone: false,
     );
-    final created = await cubit.createCustomer(body);
+    Map<String, dynamic>? created;
+    try {
+      created = await cubit.createCustomer(body);
+    } on DuplicateCustomerPhoneException catch (e) {
+      if (!mounted) return;
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          final dialogL10n = AppLocalizations.of(dialogContext)!;
+          return AlertDialog(
+            title: Text(dialogL10n.customersDuplicatePhoneTitle),
+            content: Text(e.displayMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(dialogL10n.customersDuplicatePhoneCreateAnyway),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(dialogL10n.customersDuplicatePhoneChange),
+              ),
+            ],
+          );
+        },
+      );
+      // "Change" → don't post, focus Phone 1. "Create anyway" → post with true.
+      if (proceed != true) {
+        if (!mounted) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _phone1FocusNode.requestFocus();
+          final ctx = _phone1FocusNode.context;
+          if (ctx != null) {
+            Scrollable.ensureVisible(
+              ctx,
+              duration: const Duration(milliseconds: 250),
+              alignment: 0.3,
+              curve: Curves.easeOut,
+            );
+          }
+        });
+        return;
+      }
+      if (!mounted) return;
+      created = await cubit.createCustomer(
+        body.copyWith(confirmDuplicatePhone: true),
+      );
+    }
     if (mounted && created != null) {
       final l10n = AppLocalizations.of(context)!;
       final code = created['code']?.toString().trim() ?? '';
@@ -1116,17 +1167,19 @@ class _CustomersPageState extends State<CustomersPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final content = BlocListener<CustomersCubit, CustomersState>(
-      listenWhen: (p, c) => p.error != c.error && c.error != null,
+      listenWhen: (p, c) => p.createError != c.createError && c.createError != null,
       listener: (context, state) {
-        if (state.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.error!),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
+        final message = state.createError;
+        if (message == null) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        // Clear after showing so it cannot leak into list / search UI.
+        context.read<CustomersCubit>().clearCreateError();
       },
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -1142,11 +1195,43 @@ class _CustomersPageState extends State<CustomersPage> {
                 l10n.customersFieldName,
                 _cardNameController,
                 required: true,
+                hint: 'English name only',
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                    RegExp(r"[a-zA-Z0-9\s\-'.,&()/]"),
+                  ),
+                ],
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  if (text.isEmpty) return null;
+                  if (!RegExp(r"^[a-zA-Z0-9\s\-'.,&()/]+$").hasMatch(text)) {
+                    return l10n.customersEnglishNameOnly;
+                  }
+                  return null;
+                },
               ),
               _buildField(
                 l10n.customersFieldArabicName,
                 _cardForeignNameController,
                 required: true,
+                hint: 'الاسم بالعربية فقط',
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                    RegExp(
+                      r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF0-9\s\-'.,،]",
+                    ),
+                  ),
+                ],
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  if (text.isEmpty) return null;
+                  if (!RegExp(
+                    r"^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF0-9\s\-'.,،]+$",
+                  ).hasMatch(text)) {
+                    return l10n.customersArabicNameOnly;
+                  }
+                  return null;
+                },
               ),
               _buildChannelBPPicker(l10n),
               const SizedBox(height: 12),
@@ -1264,6 +1349,7 @@ class _CustomersPageState extends State<CustomersPage> {
                 l10n: l10n,
                 label: l10n.customersFieldPhone1,
                 controller: _phone1Controller,
+                focusNode: _phone1FocusNode,
                 kind: _phone1Kind,
                 required: true,
                 onKindChanged:
@@ -1657,6 +1743,7 @@ class _CustomersPageState extends State<CustomersPage> {
     required AppLocalizations l10n,
     required String label,
     required TextEditingController controller,
+    FocusNode? focusNode,
     required _CustomerPhoneLineKind kind,
     required bool required,
     required ValueChanged<_CustomerPhoneLineKind> onKindChanged,
@@ -1690,6 +1777,7 @@ class _CustomersPageState extends State<CustomersPage> {
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
+        focusNode: focusNode,
         maxLength: maxLength,
         keyboardType: TextInputType.phone,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],

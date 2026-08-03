@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/erp_customer_model.dart';
+import 'package:sales_medical_app_mobile/features/sales_order/data/models/free_goods_option_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/sales_order_line_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/sales_order_list_item_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/vat_code_model.dart';
@@ -23,6 +24,8 @@ class SalesOrderState extends Equatable {
     this.lastSubmitWasUpdate = false,
     this.vatCodes = const [],
     this.isLoadingVatCodes = false,
+    this.freeGoodsOptions = const [],
+    this.isLoadingFreeGoods = false,
     this.editingDocNum,
     this.editingDocumentStatus,
     this.editingOrder,
@@ -74,6 +77,8 @@ class SalesOrderState extends Equatable {
   final bool lastSubmitWasUpdate;
   final List<VatCodeModel> vatCodes;
   final bool isLoadingVatCodes;
+  final List<FreeGoodsOptionModel> freeGoodsOptions;
+  final bool isLoadingFreeGoods;
   final int? editingDocNum;
   final String? editingDocumentStatus;
 
@@ -159,6 +164,8 @@ class SalesOrderState extends Equatable {
     bool? lastSubmitWasUpdate,
     List<VatCodeModel>? vatCodes,
     bool? isLoadingVatCodes,
+    List<FreeGoodsOptionModel>? freeGoodsOptions,
+    bool? isLoadingFreeGoods,
     int? editingDocNum,
     String? editingDocumentStatus,
     SalesOrderListItemModel? editingOrder,
@@ -223,6 +230,8 @@ class SalesOrderState extends Equatable {
       lastSubmitWasUpdate: lastSubmitWasUpdate ?? this.lastSubmitWasUpdate,
       vatCodes: vatCodes ?? this.vatCodes,
       isLoadingVatCodes: isLoadingVatCodes ?? this.isLoadingVatCodes,
+      freeGoodsOptions: freeGoodsOptions ?? this.freeGoodsOptions,
+      isLoadingFreeGoods: isLoadingFreeGoods ?? this.isLoadingFreeGoods,
       editingDocNum:
           clearEditingDocNum ? null : (editingDocNum ?? this.editingDocNum),
       editingDocumentStatus:
@@ -341,6 +350,8 @@ class SalesOrderState extends Equatable {
     lastSubmitWasUpdate,
     vatCodes,
     isLoadingVatCodes,
+    freeGoodsOptions,
+    isLoadingFreeGoods,
     editingDocNum,
     editingDocumentStatus,
     editingOrder,

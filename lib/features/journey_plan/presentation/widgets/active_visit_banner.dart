@@ -47,6 +47,13 @@ Visit? findActiveOngoingVisit(JourneyPlanState state) {
   return list.isEmpty ? null : list.first;
 }
 
+/// Whether the global floating visit banner has content to show.
+bool activeVisitBannerShouldShow(JourneyPlanState state) {
+  final visit = findActiveOngoingVisit(state);
+  if (visit == null) return false;
+  return visitEffectiveStart(visit, state.actualStartTimestampMs) != null;
+}
+
 bool _isActiveOngoing(Visit v, JourneyPlanState state) {
   final endedMap = state.endedVisitElapsedSeconds;
   if (VisitExecutionStatus.isVisitEnded(

@@ -82,7 +82,9 @@ class _CustomersListPageState extends State<CustomersListPage> {
     final salesEmployeeCode =
         context.read<AuthCubit>().state.loginResponse?.user.sapSalesEmployeeCode;
     final search = _searchController.text.trim();
-    context.read<CustomersCubit>().getCustomers(
+    final cubit = context.read<CustomersCubit>();
+    cubit.clearCreateError();
+    cubit.getCustomers(
           salesEmployeeCode: salesEmployeeCode,
           search: search.isEmpty ? null : search,
           pageNumber: 1,

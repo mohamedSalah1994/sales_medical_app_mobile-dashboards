@@ -294,7 +294,7 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
       barcode: product.barcode,
       itemCode: product.code,
       itemName: product.name ?? product.code,
-      quantity: 1,
+      quantity: 0,
       unitPrice: price.toDouble(),
       unitOfMeasure: uom,
       unitOfMeasureEntry: uoMEntry,
@@ -305,7 +305,19 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
   }
 
   void addLine(SalesOrderLineModel line) {
-    emit(state.copyWith(lines: [...state.lines, line]));
+    final hasFree = (line.uFree ?? '').trim().isNotEmpty;
+    final toAdd =
+        hasFree ? line : line.copyWith(uFree: defaultFreeGoodsCode());
+    emit(state.copyWith(lines: [...state.lines, toAdd]));
+  }
+
+  /// Default Free (`U_FREE`) code: `N` (No) from the loaded free-goods list when present.
+  String defaultFreeGoodsCode() {
+    for (final o in state.freeGoodsOptions) {
+      final code = o.code.trim();
+      if (code.toUpperCase() == 'N') return code;
+    }
+    return 'N';
   }
 
   void removeLineAt(int index) {
@@ -317,45 +329,28 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
 
   void updateLineQuantity(int index, num quantity) {
     if (index < 0 || index >= state.lines.length) return;
-    final line = state.lines[index];
-    final newLine = SalesOrderLineModel(
-      barcode: line.barcode,
-      itemCode: line.itemCode,
-      itemName: line.itemName,
-      quantity: quantity,
-      unitPrice: line.unitPrice,
-      unitOfMeasure: line.unitOfMeasure,
-      unitOfMeasureEntry: line.unitOfMeasureEntry,
-      vatGroup: line.vatGroup,
-      uoMs: line.uoMs,
-      warehouseCode: line.warehouseCode,
-      onHand: line.onHand,
-      currency: line.currency,
-    );
     final newLines = List<SalesOrderLineModel>.from(state.lines)
-      ..[index] = newLine;
+      ..[index] = state.lines[index].copyWith(quantity: quantity);
     emit(state.copyWith(lines: newLines));
   }
 
   void updateLineVatGroup(int index, String? vatGroup) {
     if (index < 0 || index >= state.lines.length) return;
-    final line = state.lines[index];
-    final newLine = SalesOrderLineModel(
-      barcode: line.barcode,
-      itemCode: line.itemCode,
-      itemName: line.itemName,
-      quantity: line.quantity,
-      unitPrice: line.unitPrice,
-      unitOfMeasure: line.unitOfMeasure,
-      unitOfMeasureEntry: line.unitOfMeasureEntry,
-      vatGroup: vatGroup,
-      uoMs: line.uoMs,
-      warehouseCode: line.warehouseCode,
-      onHand: line.onHand,
-      currency: line.currency,
-    );
     final newLines = List<SalesOrderLineModel>.from(state.lines)
-      ..[index] = newLine;
+      ..[index] = state.lines[index].copyWith(
+        vatGroup: vatGroup,
+        clearVatGroup: vatGroup == null,
+      );
+    emit(state.copyWith(lines: newLines));
+  }
+
+  void updateLineFreeGoods(int index, String? uFree) {
+    if (index < 0 || index >= state.lines.length) return;
+    final newLines = List<SalesOrderLineModel>.from(state.lines)
+      ..[index] = state.lines[index].copyWith(
+        uFree: uFree,
+        clearUFree: uFree == null,
+      );
     emit(state.copyWith(lines: newLines));
   }
 
@@ -368,44 +363,18 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
       final match = line.uoMs!.where((u) => u.uoMCode == code).toList();
       if (match.isNotEmpty) entry = match.first.uoMEntry;
     }
-    final newLine = SalesOrderLineModel(
-      barcode: line.barcode,
-      itemCode: line.itemCode,
-      itemName: line.itemName,
-      quantity: line.quantity,
-      unitPrice: line.unitPrice,
-      unitOfMeasure: code ?? line.unitOfMeasure,
-      unitOfMeasureEntry: entry,
-      vatGroup: line.vatGroup,
-      uoMs: line.uoMs,
-      warehouseCode: line.warehouseCode,
-      onHand: line.onHand,
-      currency: line.currency,
-    );
     final newLines = List<SalesOrderLineModel>.from(state.lines)
-      ..[index] = newLine;
+      ..[index] = line.copyWith(
+        unitOfMeasure: code ?? line.unitOfMeasure,
+        unitOfMeasureEntry: entry,
+      );
     emit(state.copyWith(lines: newLines));
   }
 
   void updateLineUnitPrice(int index, num unitPrice) {
     if (index < 0 || index >= state.lines.length) return;
-    final line = state.lines[index];
-    final newLine = SalesOrderLineModel(
-      barcode: line.barcode,
-      itemCode: line.itemCode,
-      itemName: line.itemName,
-      quantity: line.quantity,
-      unitPrice: unitPrice,
-      unitOfMeasure: line.unitOfMeasure,
-      unitOfMeasureEntry: line.unitOfMeasureEntry,
-      vatGroup: line.vatGroup,
-      uoMs: line.uoMs,
-      warehouseCode: line.warehouseCode,
-      onHand: line.onHand,
-      currency: line.currency,
-    );
     final newLines = List<SalesOrderLineModel>.from(state.lines)
-      ..[index] = newLine;
+      ..[index] = state.lines[index].copyWith(unitPrice: unitPrice);
     emit(state.copyWith(lines: newLines));
   }
 
@@ -416,6 +385,39 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
       _emitIfOpen(state.copyWith(vatCodes: list, isLoadingVatCodes: false));
     } catch (_) {
       _emitIfOpen(state.copyWith(isLoadingVatCodes: false));
+    }
+  }
+
+  Future<void> loadFreeGoodsList() async {
+    _emitIfOpen(state.copyWith(isLoadingFreeGoods: true));
+    try {
+      final list = await repository.getFreeGoodsList();
+      String defaultCode = 'N';
+      for (final o in list) {
+        final code = o.code.trim();
+        if (code.toUpperCase() == 'N') {
+          defaultCode = code;
+          break;
+        }
+      }
+      final patchedLines =
+          state.lines
+              .map(
+                (l) =>
+                    (l.uFree ?? '').trim().isEmpty
+                        ? l.copyWith(uFree: defaultCode)
+                        : l,
+              )
+              .toList();
+      _emitIfOpen(
+        state.copyWith(
+          freeGoodsOptions: list,
+          lines: patchedLines,
+          isLoadingFreeGoods: false,
+        ),
+      );
+    } catch (_) {
+      _emitIfOpen(state.copyWith(isLoadingFreeGoods: false));
     }
   }
 
@@ -483,20 +485,7 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
             final lineWh = l.warehouseCode?.trim();
             final effective =
                 (lineWh != null && lineWh.isNotEmpty) ? lineWh : whForRequest;
-            return SalesOrderLineModel(
-              barcode: l.barcode,
-              itemCode: l.itemCode,
-              itemName: l.itemName,
-              quantity: l.quantity,
-              unitPrice: l.unitPrice,
-              unitOfMeasure: l.unitOfMeasure,
-              unitOfMeasureEntry: l.unitOfMeasureEntry,
-              vatGroup: l.vatGroup,
-              uoMs: l.uoMs,
-              warehouseCode: effective,
-              onHand: l.onHand,
-              currency: l.currency,
-            );
+            return l.copyWith(warehouseCode: effective);
           }).toList();
 
       final wasUpdate = state.editingDocNum != null;
@@ -938,6 +927,7 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
                 warehouseCode: l.warehouseCode,
                 onHand: null,
                 currency: l.currency ?? order.currency,
+                uFree: l.uFree,
               ),
             )
             .toList();
@@ -996,7 +986,7 @@ class ItemLookupResult {
     this.barcode,
     this.itemCode,
     this.itemName,
-    this.quantity = 1,
+    this.quantity = 0,
     this.unitPrice = 0,
     this.unitOfMeasure,
     this.unitOfMeasureEntry,

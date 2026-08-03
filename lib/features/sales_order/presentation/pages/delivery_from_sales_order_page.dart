@@ -378,9 +378,7 @@ class _DeliveryFromSalesOrderPageState
       final line = order.lines[i];
       if (!line.isLineStatusOpen) continue;
       final baseLine = line.lineNumber ?? i;
-      final maxQty =
-          (line.remainingOpenQuantity ?? line.quantity ?? 0).toDouble();
-      final defaultQty = maxQty < 0 ? 0.0 : maxQty;
+      const defaultQty = 0.0;
       rows.add(
         _DeliveryLineRow(
           line: line,

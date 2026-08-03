@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sales_medical_app_mobile/core/theme/app_colors.dart';
+import 'package:sales_medical_app_mobile/core/utils/app_version.dart';
 
 /// Shows the app version (e.g. "v1.0.0 (1)") read from the build metadata.
 class AppVersionLabel extends StatefulWidget {
@@ -14,29 +14,18 @@ class AppVersionLabel extends StatefulWidget {
 }
 
 class _AppVersionLabelState extends State<AppVersionLabel> {
-  /// Fallback shown before the native plugin loads (or if it is unavailable).
-  /// Keep in sync with the `version:` field in pubspec.yaml.
-  static const String _fallback = 'v1.0.4';
-
-  static String? _cached;
   late String _version;
 
   @override
   void initState() {
     super.initState();
-    _version = _cached ?? _fallback;
-    if (_cached == null) _load();
+    _version = AppVersion.cachedOrFallback;
+    _load();
   }
 
   Future<void> _load() async {
-    try {
-      final info = await PackageInfo.fromPlatform();
-      final value = 'v${info.version} (${info.buildNumber})';
-      _cached = value;
-      if (mounted) setState(() => _version = value);
-    } catch (_) {
-      // Keep the fallback if version metadata is unavailable.
-    }
+    final value = await AppVersion.getDisplayVersion();
+    if (mounted) setState(() => _version = value);
   }
 
   @override

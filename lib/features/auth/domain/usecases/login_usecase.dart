@@ -7,11 +7,13 @@ class LoginParams {
     required this.username,
     required this.password,
     required this.rememberMe,
+    this.version,
   });
 
   final String username;
   final String password;
   final bool rememberMe;
+  final String? version;
 }
 
 class LoginUseCase implements UseCase<LoginResponse, LoginParams> {
@@ -25,6 +27,7 @@ class LoginUseCase implements UseCase<LoginResponse, LoginParams> {
       params.username,
       params.password,
       params.rememberMe,
+      version: params.version,
     );
   }
 }

@@ -5,7 +5,11 @@ import 'package:sales_medical_app_mobile/core/network/api_service.dart';
 import 'package:sales_medical_app_mobile/features/auth/data/models/login_response_model.dart';
 
 abstract class AuthRemoteDataSource {
-  Future<LoginResponseModel> login(String username, String password);
+  Future<LoginResponseModel> login(
+    String username,
+    String password, {
+    String? version,
+  });
   Future<void> logout();
 }
 
@@ -15,11 +19,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final ApiService apiService;
 
   @override
-  Future<LoginResponseModel> login(String username, String password) async {
+  Future<LoginResponseModel> login(
+    String username,
+    String password, {
+    String? version,
+  }) async {
     try {
+      final data = <String, dynamic>{
+        'username': username,
+        'password': password,
+      };
+      final v = version?.trim();
+      if (v != null && v.isNotEmpty) {
+        data['version'] = v;
+      }
       final response = await apiService.post(
         '/api/Auth/login',
-        data: {'username': username, 'password': password},
+        data: data,
       );
 
       // Check if response contains error field (even if status is 200)

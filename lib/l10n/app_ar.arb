@@ -342,6 +342,9 @@
       "details": {"type": "String"}
     }
   },
+  "customersDuplicatePhoneTitle": "الهاتف مستخدم مسبقاً",
+  "customersDuplicatePhoneCreateAnyway": "إنشاء على أي حال",
+  "customersDuplicatePhoneChange": "تغيير",
   "customersCustomerLocationSection": "موقع العميل",
   "customersLocationHowTo": "لاختيار الموقع: افتح خرائط Google بالزر أدناه، حدد موقع العميل على الخريطة، اضغط مشاركة، انسخ الرابط ثم الصقه في الحقل أدناه.",
   "customersGoogleMapsLinkLabel": "رابط خرائط Google",
@@ -372,6 +375,8 @@
   },
   "customersFieldVatNumber": "الرقم الضريبي",
   "customersFieldRequired": "هذا الحقل مطلوب",
+  "customersEnglishNameOnly": "يجب أن يحتوي الاسم الإنجليزي على أحرف إنجليزية فقط",
+  "customersArabicNameOnly": "يجب أن يحتوي الاسم العربي على أحرف عربية فقط",
   "customersPhone1Invalid": "أدخل 11 رقماً بعد 2 (الإجمالي 12، مثال: 01234567890)",
   "customersPhone2Invalid": "يجب ألا يتجاوز هاتف 2 10 أحرف",
   "customersLocationRequired": "موقع العميل مطلوب",

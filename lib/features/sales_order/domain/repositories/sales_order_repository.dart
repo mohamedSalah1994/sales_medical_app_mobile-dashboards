@@ -3,6 +3,7 @@ import 'package:sales_medical_app_mobile/features/sales_order/data/models/item_b
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/create_return_from_delivery_request_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/create_sales_order_request_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/erp_customer_model.dart';
+import 'package:sales_medical_app_mobile/features/sales_order/data/models/free_goods_option_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/item_lookup_response_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/sales_order_list_item_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/sales_order_ready_for_delivery_model.dart';
@@ -54,6 +55,8 @@ abstract class SalesOrderRepository {
     int take = kOdbcItemLookupTake,
   });
   Future<List<VatCodeModel>> getVatCodes();
+  /// GET /api/erp/sales-orders/getFreeGoodsList
+  Future<List<FreeGoodsOptionModel>> getFreeGoodsList();
   Future<SalesOrderResponseModel> createSalesOrder(
     CreateSalesOrderRequestModel request,
   );

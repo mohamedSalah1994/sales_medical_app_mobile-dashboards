@@ -18,6 +18,8 @@ class SalesOrderListItemModel {
     this.currency,
     this.lines = const [],
     this.appSalesOrderId,
+    this.uNetDue,
+    this.uTotBonus,
   });
 
   /// Set when row comes from GET /api/Sales/orders (UUID). ERP detail uses [docEntry].
@@ -49,6 +51,12 @@ class SalesOrderListItemModel {
   /// Document currency code (e.g. "EGP"). Returned by GET single-doc.
   final String? currency;
   final List<SalesOrderListLineModel> lines;
+
+  /// Header total for lines with `U_FREE` = `N` (`U_NET_DUE`).
+  final num? uNetDue;
+
+  /// Header total for lines with other `U_FREE` values (`U_TOT_BONUS`).
+  final num? uTotBonus;
 
   factory SalesOrderListItemModel.fromJson(Map<String, dynamic> json) {
     final linesRaw = json['lines'];
@@ -85,6 +93,10 @@ class SalesOrderListItemModel {
       currency: _optionalStringFromJson(json['currency']),
       lines: linesList,
       appSalesOrderId: json['appSalesOrderId'] as String?,
+      uNetDue: (json['U_NET_DUE'] as num?)?.toDouble() ??
+          (json['uNetDue'] as num?)?.toDouble(),
+      uTotBonus: (json['U_TOT_BONUS'] as num?)?.toDouble() ??
+          (json['uTotBonus'] as num?)?.toDouble(),
     );
   }
 
@@ -178,6 +190,7 @@ class SalesOrderListLineModel {
     this.onHand,
     this.tracksBatches = false,
     this.batchNumbers,
+    this.uFree,
   });
 
   final String? itemCode;
@@ -207,6 +220,9 @@ class SalesOrderListLineModel {
   /// From GET delivery/return lines when ERP sends `batchNumbers`.
   final List<ErpLineBatchNumber>? batchNumbers;
 
+  /// Free goods code (`U_FREE`) when returned by ERP.
+  final String? uFree;
+
   factory SalesOrderListLineModel.fromJson(Map<String, dynamic> json) {
     return SalesOrderListLineModel(
       itemCode: json['itemCode'] as String?,
@@ -228,6 +244,7 @@ class SalesOrderListLineModel {
       onHand: json['onHand'] as num?,
       tracksBatches: _parseBool(json['tracksBatches']) ?? false,
       batchNumbers: _parseLineBatchNumbers(json['batchNumbers']),
+      uFree: _optionalStringFromJson(json['U_FREE'] ?? json['uFree']),
     );
   }
 

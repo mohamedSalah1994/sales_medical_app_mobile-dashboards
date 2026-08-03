@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:sales_medical_app_mobile/core/error/failure.dart';
 import 'package:sales_medical_app_mobile/core/usecases/usecase.dart';
+import 'package:sales_medical_app_mobile/core/utils/app_version.dart';
 import 'package:sales_medical_app_mobile/features/auth/domain/entities/login_response.dart';
 import 'package:sales_medical_app_mobile/features/auth/domain/usecases/check_auth_usecase.dart';
 import 'package:sales_medical_app_mobile/features/auth/domain/usecases/login_usecase.dart';
@@ -56,11 +57,13 @@ class AuthCubit extends Cubit<AuthState> {
     );
 
     try {
+      final version = await AppVersion.getDisplayVersion();
       final loginResponse = await _loginUseCase(
         LoginParams(
           username: state.username,
           password: state.password,
           rememberMe: state.rememberMe,
+          version: version,
         ),
       );
 

@@ -20,10 +20,15 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<LoginResponse> login(
     String username,
     String password,
-    bool rememberMe,
-  ) async {
+    bool rememberMe, {
+    String? version,
+  }) async {
     try {
-      final response = await remoteDataSource.login(username, password);
+      final response = await remoteDataSource.login(
+        username,
+        password,
+        version: version,
+      );
       // Save login data locally first
       await localDataSource.saveLoginData(response, rememberMe);
       // Ensure token is set in API service after saving to preferences

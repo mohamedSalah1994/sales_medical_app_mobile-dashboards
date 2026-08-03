@@ -14,6 +14,7 @@ class SalesOrderLineModel {
     this.warehouseCode,
     this.onHand,
     this.currency,
+    this.uFree,
   });
 
   final String? barcode;
@@ -41,6 +42,55 @@ class SalesOrderLineModel {
   /// ERP currency code (display-only, e.g. "EGP"). Not sent on POST/PATCH.
   final String? currency;
 
+  /// Free goods code from GET `/api/erp/sales-orders/getFreeGoodsList`; POST/PATCH as `U_FREE`.
+  final String? uFree;
+
+  /// Line amount used for Free-based header totals (`qty * unitPrice`).
+  num get lineAmount => quantity * unitPrice;
+
+  /// Whether this line counts toward `U_NET_DUE` (`U_FREE` = `N`).
+  bool get isUFreeNo => (uFree ?? '').trim().toUpperCase() == 'N';
+
+  /// Whether this line counts toward `U_TOT_BONUS` (any other non-empty `U_FREE`).
+  bool get isUFreeOther {
+    final code = (uFree ?? '').trim();
+    return code.isNotEmpty && code.toUpperCase() != 'N';
+  }
+
+  SalesOrderLineModel copyWith({
+    String? barcode,
+    String? itemCode,
+    String? itemName,
+    num? quantity,
+    num? unitPrice,
+    String? unitOfMeasure,
+    int? unitOfMeasureEntry,
+    String? vatGroup,
+    List<ItemUoMModel>? uoMs,
+    String? warehouseCode,
+    num? onHand,
+    String? currency,
+    String? uFree,
+    bool clearUFree = false,
+    bool clearVatGroup = false,
+  }) {
+    return SalesOrderLineModel(
+      barcode: barcode ?? this.barcode,
+      itemCode: itemCode ?? this.itemCode,
+      itemName: itemName ?? this.itemName,
+      quantity: quantity ?? this.quantity,
+      unitPrice: unitPrice ?? this.unitPrice,
+      unitOfMeasure: unitOfMeasure ?? this.unitOfMeasure,
+      unitOfMeasureEntry: unitOfMeasureEntry ?? this.unitOfMeasureEntry,
+      vatGroup: clearVatGroup ? null : (vatGroup ?? this.vatGroup),
+      uoMs: uoMs ?? this.uoMs,
+      warehouseCode: warehouseCode ?? this.warehouseCode,
+      onHand: onHand ?? this.onHand,
+      currency: currency ?? this.currency,
+      uFree: clearUFree ? null : (uFree ?? this.uFree),
+    );
+  }
+
   /// POST `/api/erp/sales-orders` line shape.
   Map<String, dynamic> toJsonForPost() {
     final uomValue =
@@ -56,6 +106,7 @@ class SalesOrderLineModel {
       'unitOfMeasure': uomValue,
       'vatGroup': vatGroup ?? '',
       'warehouseCode': warehouseCode ?? '',
+      'U_FREE': uFree ?? '',
     };
   }
 
@@ -72,6 +123,25 @@ class SalesOrderLineModel {
       'unitOfMeasure': uomValue,
       'vatGroup': vatGroup ?? '',
       'warehouseCode': warehouseCode ?? '',
+      'U_FREE': uFree ?? '',
     };
   }
+}
+
+/// Header totals derived from Free (`U_FREE`) on lines.
+/// - [uNetDue] → `U_NET_DUE` (lines with `U_FREE` = `N`)
+/// - [uTotBonus] → `U_TOT_BONUS` (lines with any other non-empty `U_FREE`)
+({num uNetDue, num uTotBonus}) salesOrderFreeTotals(
+  Iterable<SalesOrderLineModel> lines,
+) {
+  num uNetDue = 0;
+  num uTotBonus = 0;
+  for (final line in lines) {
+    if (line.isUFreeNo) {
+      uNetDue += line.lineAmount;
+    } else if (line.isUFreeOther) {
+      uTotBonus += line.lineAmount;
+    }
+  }
+  return (uNetDue: uNetDue, uTotBonus: uTotBonus);
 }

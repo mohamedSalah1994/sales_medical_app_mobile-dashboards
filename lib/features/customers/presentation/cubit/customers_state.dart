@@ -6,7 +6,10 @@ class CustomersState {
   final bool isLoadingMore;
   final bool hasMore;
   final int currentPage;
+  /// List / search / series / master-data errors (not create).
   final String? error;
+  /// Create-customer failures only — must not block the customers list UI.
+  final String? createError;
   final List<CustomerSeriesModel> series;
   final bool isLoadingSeries;
   final bool isCreating;
@@ -20,6 +23,7 @@ class CustomersState {
     this.hasMore = true,
     this.currentPage = 0,
     this.error,
+    this.createError,
     this.series = const [],
     this.isLoadingSeries = false,
     this.isCreating = false,
@@ -34,6 +38,9 @@ class CustomersState {
     bool? hasMore,
     int? currentPage,
     String? error,
+    bool clearError = false,
+    String? createError,
+    bool clearCreateError = false,
     List<CustomerSeriesModel>? series,
     bool? isLoadingSeries,
     bool? isCreating,
@@ -46,7 +53,8 @@ class CustomersState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMore: hasMore ?? this.hasMore,
       currentPage: currentPage ?? this.currentPage,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
+      createError: clearCreateError ? null : (createError ?? this.createError),
       series: series ?? this.series,
       isLoadingSeries: isLoadingSeries ?? this.isLoadingSeries,
       isCreating: isCreating ?? this.isCreating,

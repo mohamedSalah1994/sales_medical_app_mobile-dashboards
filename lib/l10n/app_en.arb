@@ -345,6 +345,9 @@
       "details": {"type": "String"}
     }
   },
+  "customersDuplicatePhoneTitle": "Phone already used",
+  "customersDuplicatePhoneCreateAnyway": "Create anyway",
+  "customersDuplicatePhoneChange": "Change",
   "customersCustomerLocationSection": "Customer location",
   "customersLocationHowTo": "To choose a location: open Google Maps using the button below, select the customer location on the map, tap Share, copy the link, then paste it in the field below.",
   "customersGoogleMapsLinkLabel": "Google Maps link",
@@ -375,6 +378,8 @@
   },
   "customersFieldVatNumber": "VAT Number",
   "customersFieldRequired": "This field is required",
+  "customersEnglishNameOnly": "English name must contain English characters only",
+  "customersArabicNameOnly": "Arabic name must contain Arabic characters only",
   "customersPhone1Invalid": "Enter 11 digits after 2 (12 total, e.g. 01234567890)",
   "customersPhone2Invalid": "Phone 2 must be at most 10 characters",
   "customersLocationRequired": "Customer location is required",

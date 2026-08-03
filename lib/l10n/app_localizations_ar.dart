@@ -404,8 +404,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deleteJourneyPlan => 'حذف خطة الرحلة';
 
   @override
-  String get deleteJourneyPlanConfirmation =>
-      'هل أنت متأكد من حذف خطة الرحلة هذه؟';
+  String get deleteJourneyPlanConfirmation => 'هل أنت متأكد من حذف خطة الرحلة هذه؟';
 
   @override
   String get yes => 'نعم';
@@ -441,8 +440,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get saving => 'جاري الحفظ...';
 
   @override
-  String get pleaseSelectStartAndEndDates =>
-      'يرجى اختيار تاريخ البداية والنهاية';
+  String get pleaseSelectStartAndEndDates => 'يرجى اختيار تاريخ البداية والنهاية';
 
   @override
   String get pleaseCreateJourneyPlanFirst => 'يرجى إنشاء خطة رحلة أولاً';
@@ -476,12 +474,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get journeyPlanAddVisitTitle => 'إضافة زيارة';
 
   @override
-  String get journeyPlanCreateFirstBeforeVisits =>
-      'يرجى إنشاء خطة رحلة في الخطوة 1 قبل إضافة الزيارات.';
+  String get journeyPlanCreateFirstBeforeVisits => 'يرجى إنشاء خطة رحلة في الخطوة 1 قبل إضافة الزيارات.';
 
   @override
-  String get journeyPlanStep2SubtitleExisting =>
-      'اعرض الزيارات الحالية وأضف زيارات جديدة إلى خطتك';
+  String get journeyPlanStep2SubtitleExisting => 'اعرض الزيارات الحالية وأضف زيارات جديدة إلى خطتك';
 
   @override
   String get journeyPlanStep2SubtitleNew => 'أنشئ زيارة لخطة رحلتك';
@@ -595,12 +591,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get visitSurveyNoSubmissions => 'لا توجد إجابات استبيان لهذه الزيارة.';
 
   @override
-  String get visitSurveyNoQuestions =>
-      'لا تحتوي أسئلة هذا الاستبيان على معرّفات من الخادم ولا يمكن الإجابة عليها في التطبيق.';
+  String get visitSurveyNoQuestions => 'لا تحتوي أسئلة هذا الاستبيان على معرّفات من الخادم ولا يمكن الإجابة عليها في التطبيق.';
 
   @override
-  String get visitActionsEmpty =>
-      'لا توجد إجراءات زيارة أو إجابات استبيان بعد.';
+  String get visitActionsEmpty => 'لا توجد إجراءات زيارة أو إجابات استبيان بعد.';
 
   @override
   String get visitSurveySubmitted => 'تم إرسال الاستبيان.';
@@ -612,20 +606,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get visitSurveyRequired => 'يرجى الإجابة عن جميع الأسئلة المطلوبة.';
 
   @override
-  String get visitSurveyAnswerAtLeastTwo =>
-      'يرجى الإجابة عن سؤالين على الأقل قبل الإرسال.';
+  String get visitSurveyAnswerAtLeastTwo => 'يرجى الإجابة عن سؤالين على الأقل قبل الإرسال.';
 
   @override
-  String get visitSurveyAnswerAllQuestions =>
-      'يرجى الإجابة عن كل الأسئلة قبل الإرسال.';
+  String get visitSurveyAnswerAllQuestions => 'يرجى الإجابة عن كل الأسئلة قبل الإرسال.';
 
   @override
-  String get visitSurveyAnswerAllHint =>
-      'أجب عن جميع الأسئلة في البطاقة أدناه، ثم اضغط إرسال مرة واحدة لإرسال إجابتك.';
+  String get visitSurveyAnswerAllHint => 'أجب عن جميع الأسئلة في البطاقة أدناه، ثم اضغط إرسال مرة واحدة لإرسال إجابتك.';
 
   @override
-  String get visitSurveyNotActive =>
-      'هذا الاستبيان غير نشط أو خارج فترة الصلاحية.';
+  String get visitSurveyNotActive => 'هذا الاستبيان غير نشط أو خارج فترة الصلاحية.';
 
   @override
   String get visitSurveyRecordedActions => 'الإجراءات المسجّلة';
@@ -647,8 +637,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get readyForDeliveryTitle => 'أوامر جاهزة للتسليم';
 
   @override
-  String get readyForDeliverySearchHint =>
-      'ابحث برقم المستند أو رمز أو اسم العميل…';
+  String get readyForDeliverySearchHint => 'ابحث برقم المستند أو رمز أو اسم العميل…';
 
   @override
   String get readyForDeliveryEmpty => 'لا توجد أوامر جاهزة للتسليم.';
@@ -660,8 +649,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get readyForReturnTitle => 'تسليمات جاهزة للمرتجع';
 
   @override
-  String get readyForReturnSearchHint =>
-      'ابحث برقم المستند أو رمز أو اسم العميل…';
+  String get readyForReturnSearchHint => 'ابحث برقم المستند أو رمز أو اسم العميل…';
 
   @override
   String get readyForReturnEmpty => 'لا توجد تسليمات جاهزة للمرتجع.';
@@ -691,8 +679,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inventorySearchByDocEntry => 'البحث برقم المستند';
 
   @override
-  String get inventoryListHint =>
-      'أدخل رقم المستند أعلاه لفتح تحويل، أو استخدم الزر لإنشاء تحويل مخزون جديد.';
+  String get inventoryListHint => 'أدخل رقم المستند أعلاه لفتح تحويل، أو استخدم الزر لإنشاء تحويل مخزون جديد.';
 
   @override
   String get inventoryFabCreate => 'إنشاء';
@@ -716,12 +703,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inventorySelectBothWarehouses => 'اختر مستودع المصدر والوجهة.';
 
   @override
-  String get inventoryWarehousesMustDiffer =>
-      'يجب أن يختلف مستودع المصدر عن الوجهة.';
+  String get inventoryWarehousesMustDiffer => 'يجب أن يختلف مستودع المصدر عن الوجهة.';
 
   @override
-  String get inventorySelectFromWarehouseFirst =>
-      'اختر مستودع المصدر قبل إضافة الأصناف.';
+  String get inventorySelectFromWarehouseFirst => 'اختر مستودع المصدر قبل إضافة الأصناف.';
 
   @override
   String get inventoryAddItems => 'إضافة أصناف';
@@ -744,8 +729,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get inventoryQuantityMustBePositive =>
-      'الكمية يجب أن تكون أكبر من صفر.';
+  String get inventoryQuantityMustBePositive => 'الكمية يجب أن تكون أكبر من صفر.';
 
   @override
   String get inventoryCreateFailed => 'تعذر إنشاء التحويل.';
@@ -807,8 +791,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inventoryCounting => 'جرد المخزون';
 
   @override
-  String get inventoryCountingListHint =>
-      'أدخل رقم المستند أعلاه لفتح جرد، أو استخدم إنشاء لبدء جرد جديد.';
+  String get inventoryCountingListHint => 'أدخل رقم المستند أعلاه لفتح جرد، أو استخدم إنشاء لبدء جرد جديد.';
 
   @override
   String get inventoryCountingNew => 'جرد مخزون جديد';
@@ -837,19 +820,16 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get inventoryCountingNoDefaultWarehouse =>
-      'عيّن مستودعاً افتراضياً في ملفك قبل إنشاء جرد.';
+  String get inventoryCountingNoDefaultWarehouse => 'عيّن مستودعاً افتراضياً في ملفك قبل إنشاء جرد.';
 
   @override
-  String get inventoryCountedQtyNonNegative =>
-      'لا يمكن أن تكون الكمية المعدودة سالبة.';
+  String get inventoryCountedQtyNonNegative => 'لا يمكن أن تكون الكمية المعدودة سالبة.';
 
   @override
   String get customersPickCustomerLocationTitle => 'اختر موقع العميل';
 
   @override
-  String get customersPickLocationMapHint =>
-      'اضغط على الخريطة في أي مكان لاختيار موقع العميل.';
+  String get customersPickLocationMapHint => 'اضغط على الخريطة في أي مكان لاختيار موقع العميل.';
 
   @override
   String get customersSearchAreaHint => 'بحث في المنطقة';
@@ -866,12 +846,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get customersGoogleMapsOpenedSnackbar =>
-      'تم فتح خرائط Google. اختر موقعاً، ثم مشاركة، انسخ الرابط والصقه في الحقل أدناه.';
+  String get customersGoogleMapsOpenedSnackbar => 'تم فتح خرائط Google. اختر موقعاً، ثم مشاركة، انسخ الرابط والصقه في الحقل أدناه.';
 
   @override
-  String get customersInvalidMapsLink =>
-      'رابط خرائط Google غير صالح. يرجى لصق رابط يحتوي على الإحداثيات.';
+  String get customersInvalidMapsLink => 'رابط خرائط Google غير صالح. يرجى لصق رابط يحتوي على الإحداثيات.';
 
   @override
   String get customersCustomerCreatedSuccess => 'تم إنشاء العميل بنجاح';
@@ -882,11 +860,19 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get customersDuplicatePhoneTitle => 'الهاتف مستخدم مسبقاً';
+
+  @override
+  String get customersDuplicatePhoneCreateAnyway => 'إنشاء على أي حال';
+
+  @override
+  String get customersDuplicatePhoneChange => 'تغيير';
+
+  @override
   String get customersCustomerLocationSection => 'موقع العميل';
 
   @override
-  String get customersLocationHowTo =>
-      'لاختيار الموقع: افتح خرائط Google بالزر أدناه، حدد موقع العميل على الخريطة، اضغط مشاركة، انسخ الرابط ثم الصقه في الحقل أدناه.';
+  String get customersLocationHowTo => 'لاختيار الموقع: افتح خرائط Google بالزر أدناه، حدد موقع العميل على الخريطة، اضغط مشاركة، انسخ الرابط ثم الصقه في الحقل أدناه.';
 
   @override
   String get customersGoogleMapsLinkLabel => 'رابط خرائط Google';
@@ -943,8 +929,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customersPhoneMobileInvalid => 'أدخل 11 رقماً بعد 2 (الإجمالي 12)';
 
   @override
-  String get customersPhoneLandLineInvalid =>
-      'أدخل 10 أرقام بالضبط للخط الأرضي';
+  String get customersPhoneLandLineInvalid => 'أدخل 10 أرقام بالضبط للخط الأرضي';
 
   @override
   String get customersPhoneDigitsOnly => 'أدخل أرقاماً فقط';
@@ -961,8 +946,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customersFieldRequired => 'هذا الحقل مطلوب';
 
   @override
-  String get customersPhone1Invalid =>
-      'أدخل 11 رقماً بعد 2 (الإجمالي 12، مثال: 01234567890)';
+  String get customersEnglishNameOnly => 'يجب أن يحتوي الاسم الإنجليزي على أحرف إنجليزية فقط';
+
+  @override
+  String get customersArabicNameOnly => 'يجب أن يحتوي الاسم العربي على أحرف عربية فقط';
+
+  @override
+  String get customersPhone1Invalid => 'أدخل 11 رقماً بعد 2 (الإجمالي 12، مثال: 01234567890)';
 
   @override
   String get customersPhone2Invalid => 'يجب ألا يتجاوز هاتف 2 10 أحرف';
@@ -1121,24 +1111,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get openSettings => 'فتح الإعدادات';
 
   @override
-  String get locationServicesDisabled =>
-      'خدمات الموقع معطّلة. يرجى تفعيلها من إعدادات الجهاز.';
+  String get locationServicesDisabled => 'خدمات الموقع معطّلة. يرجى تفعيلها من إعدادات الجهاز.';
 
   @override
-  String get locationPermissionDenied =>
-      'تم رفض إذن الموقع. يرجى منح الإذن لاستخدام هذه الميزة.';
+  String get locationPermissionDenied => 'تم رفض إذن الموقع. يرجى منح الإذن لاستخدام هذه الميزة.';
 
   @override
-  String get locationPermissionDeniedForever =>
-      'تم رفض إذن الموقع بشكل دائم. يرجى تفعيله من إعدادات التطبيق.';
+  String get locationPermissionDeniedForever => 'تم رفض إذن الموقع بشكل دائم. يرجى تفعيله من إعدادات التطبيق.';
 
   @override
-  String get couldNotOpenGoogleMaps =>
-      'تعذر فتح خرائط Google. تأكد من وجود متصفح أو تطبيق الخرائط.';
+  String get couldNotOpenGoogleMaps => 'تعذر فتح خرائط Google. تأكد من وجود متصفح أو تطبيق الخرائط.';
 
   @override
-  String get googleMapsOpenedPasteLinkAbove =>
-      'تم فتح خرائط Google. اختر موقعاً، ثم مشاركة، انسخ الرابط والصقه في الحقل أعلاه.';
+  String get googleMapsOpenedPasteLinkAbove => 'تم فتح خرائط Google. اختر موقعاً، ثم مشاركة، انسخ الرابط والصقه في الحقل أعلاه.';
 
   @override
   String get standaloneGoogleMapsLinkOptional => 'رابط خرائط Google (اختياري)';
@@ -1147,8 +1132,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get standaloneGoogleMapsHintAuto => 'يُنشأ رابط خرائط Google تلقائياً';
 
   @override
-  String get standaloneMapsLocationTip =>
-      'نصيحة: اضغط أيقونة الموقع لالتقاط موقعك الحالي، أو أيقونة الخريطة لفتح خرائط Google واختيار موقع يدوياً.';
+  String get standaloneMapsLocationTip => 'نصيحة: اضغط أيقونة الموقع لالتقاط موقعك الحالي، أو أيقونة الخريطة لفتح خرائط Google واختيار موقع يدوياً.';
 
   @override
   String get tooltipGetCurrentLocation => 'الحصول على الموقع الحالي';
@@ -1217,8 +1201,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamMapOpenInMaps => 'فتح في الخرائط';
 
   @override
-  String get customersSearchByNameOrCode =>
-      'ابحث عن العملاء بالاسم أو الرمز...';
+  String get customersSearchByNameOrCode => 'ابحث عن العملاء بالاسم أو الرمز...';
 
   @override
   String get customersNoCustomersYet => 'لا يوجد عملاء بعد';
