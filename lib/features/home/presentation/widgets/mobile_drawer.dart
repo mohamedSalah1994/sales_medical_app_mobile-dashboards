@@ -88,7 +88,7 @@ class MobileDrawer extends StatelessWidget {
                           onItemTapped(11);
                         },
                       ),
-                    if (isSalesRep)
+                    if (isSalesRep || isSupervisor)
                       _DrawerMenuItem(
                         icon: Icons.business_outlined,
                         activeIcon: Icons.business,

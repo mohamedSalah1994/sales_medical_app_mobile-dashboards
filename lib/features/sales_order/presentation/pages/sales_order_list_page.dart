@@ -620,6 +620,26 @@ class _OrderCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if ((order.uJovi ?? '').trim().isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Text(
+                              'Jovi: ${order.uJovi!.trim()}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

@@ -220,7 +220,8 @@ class _SalesOrderPageState extends State<SalesOrderPage> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                if (state.editingDocNum == null) ...[
+                if (state.editingDocNum == null ||
+                    state.editingDocumentStatus == 'bost_Open') ...[
                   const SizedBox(height: 6),
                   _buildAddItemBar(context, state),
                   const SizedBox(height: 6),

@@ -65,6 +65,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return loginResponse;
     } on ApiHttpException catch (e) {
+      if (e.isClientVersionOutdated) {
+        // Force-update UI is shown by ApiService; don't surface as login error.
+        throw ServerFailure(message: '');
+      }
       var message = e.message.trim();
       if (message.isEmpty || message == 'An error occurred') {
         message =

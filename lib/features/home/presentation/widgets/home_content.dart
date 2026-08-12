@@ -265,7 +265,7 @@ class _HomeContentState extends State<HomeContent> {
                 .role
                 .toLowerCase() ??
             '';
-        if (role != 'salesrep') {
+        if (role != 'salesrep' && role != 'supervisor') {
           return const MobileDashboardLandingPage();
         }
         return const CustomersListPage(showScaffold: false);
