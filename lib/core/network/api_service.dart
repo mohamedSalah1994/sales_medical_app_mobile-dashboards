@@ -8,7 +8,7 @@ import 'package:sales_medical_app_mobile/core/utils/app_version.dart';
 
 class ApiService {
   /// Single API host for auth, master data, and ERP routes.
-  static const String baseUrl = 'https://dktapi2.cloudiax.com';
+  static const String baseUrl = 'https://dktapi1.cloudiax.com';
 
   ApiService() {
     _dio = Dio(
