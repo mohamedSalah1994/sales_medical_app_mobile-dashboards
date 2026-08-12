@@ -115,6 +115,7 @@ class ErpDocumentPdfBuilder {
       PdfColor(214 / 255, 164 / 255, 166 / 255);
 
   Future<Uint8List> build() async {
+    final logo = await loadAppLogo();
     final pdf = pw.Document();
 
     // Use pdf package default fonts (Helvetica) — avoids the `printing` plugin,
@@ -124,7 +125,7 @@ class ErpDocumentPdfBuilder {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(20, 24, 20, 24),
-        header: (context) => _buildPageHeader(context),
+        header: (context) => _buildPageHeader(context, logo: logo),
         footer: (context) => _buildPageFooter(context),
         build: (context) {
           return [
@@ -151,7 +152,7 @@ class ErpDocumentPdfBuilder {
 
   // ---------- Page chrome ----------
 
-  pw.Widget _buildPageHeader(pw.Context context) {
+  pw.Widget _buildPageHeader(pw.Context context, {pw.MemoryImage? logo}) {
     if (context.pageNumber == 1) {
       return pw.Container(
         margin: const pw.EdgeInsets.only(bottom: 12),
@@ -159,28 +160,51 @@ class ErpDocumentPdfBuilder {
         decoration: const pw.BoxDecoration(
           border: pw.Border(bottom: pw.BorderSide(color: _border, width: 1)),
         ),
-        child: pw.Align(
-          alignment: pw.Alignment.centerLeft,
-          child: pw.Text(
-            title,
-            style: pw.TextStyle(
-              fontSize: 18,
-              fontWeight: pw.FontWeight.bold,
-              color: _brand,
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            pw.Expanded(
+              child: pw.Text(
+                title,
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  color: _brand,
+                ),
+              ),
             ),
-          ),
+            if (logo != null)
+              pw.Image(
+                logo,
+                height: 40,
+                fit: pw.BoxFit.contain,
+              ),
+          ],
         ),
       );
     }
     return pw.Container(
       margin: const pw.EdgeInsets.only(bottom: 8),
-      child: pw.Text(
-        '$title - page ${context.pageNumber}/${context.pagesCount}',
-        style: pw.TextStyle(
-          fontSize: 10,
-          color: _textSecondary,
-          fontWeight: pw.FontWeight.bold,
-        ),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.Expanded(
+            child: pw.Text(
+              '$title - page ${context.pageNumber}/${context.pagesCount}',
+              style: pw.TextStyle(
+                fontSize: 10,
+                color: _textSecondary,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+          ),
+          if (logo != null)
+            pw.Image(
+              logo,
+              height: 22,
+              fit: pw.BoxFit.contain,
+            ),
+        ],
       ),
     );
   }
@@ -469,9 +493,7 @@ class ErpDocumentPdfBuilder {
   }
 }
 
-/// Convenience: load the bundled DKT logo for future header decoration. Not
-/// referenced by [ErpDocumentPdfBuilder] today but exposed so we can wire it
-/// in later without changing the call sites.
+/// Loads the bundled DKT logo for PDF headers (`assets/images/DKT_Logo.png`).
 Future<pw.MemoryImage?> loadAppLogo() async {
   try {
     final bytes = await rootBundle.load('assets/images/DKT_Logo.png');

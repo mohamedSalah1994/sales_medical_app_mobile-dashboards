@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:sales_medical_app_mobile/core/error/failure.dart';
+import 'package:sales_medical_app_mobile/core/network/force_update_gate.dart';
 import 'package:sales_medical_app_mobile/core/usecases/usecase.dart';
 import 'package:sales_medical_app_mobile/core/utils/app_version.dart';
 import 'package:sales_medical_app_mobile/features/auth/domain/entities/login_response.dart';
@@ -57,7 +58,8 @@ class AuthCubit extends Cubit<AuthState> {
     );
 
     try {
-      final version = await AppVersion.getDisplayVersion();
+      // Same value as `X-App-Version` header (semver / store build).
+      final version = await AppVersion.getApiVersion();
       final loginResponse = await _loginUseCase(
         LoginParams(
           username: state.username,
@@ -76,6 +78,17 @@ class AuthCubit extends Cubit<AuthState> {
         ),
       );
     } catch (e) {
+      if (ForceUpdateGate.isActive) {
+        emit(
+          state.copyWith(
+            isSubmitting: false,
+            isSuccess: false,
+            clearError: true,
+          ),
+        );
+        return;
+      }
+
       String errorMessage = 'An error occurred. Please try again.';
 
       if (e is ServerFailure) {
@@ -86,6 +99,17 @@ class AuthCubit extends Cubit<AuthState> {
         errorMessage = errorString.replaceAll('Exception: ', '');
       } else {
         errorMessage = e.toString();
+      }
+
+      if (errorMessage.trim().isEmpty) {
+        emit(
+          state.copyWith(
+            isSubmitting: false,
+            isSuccess: false,
+            clearError: true,
+          ),
+        );
+        return;
       }
 
       emit(

@@ -5,6 +5,7 @@ class ApiHttpException implements Exception {
     required this.statusCode,
     required this.message,
     this.isUnauthorized = false,
+    this.isClientVersionOutdated = false,
   });
 
   final int statusCode;
@@ -13,6 +14,9 @@ class ApiHttpException implements Exception {
   /// True for a 401 on an authenticated request. The app silently logs the
   /// user out and returns to login, so no error message should be shown.
   final bool isUnauthorized;
+
+  /// True for HTTP 426 / CLIENT_VERSION_* — show force-update UI, not login.
+  final bool isClientVersionOutdated;
 
   @override
   String toString() => message;

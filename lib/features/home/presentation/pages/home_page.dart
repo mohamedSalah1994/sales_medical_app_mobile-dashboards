@@ -124,8 +124,8 @@ class _HomeViewState extends State<_HomeView> {
         '';
     final isSalesRep = role == 'salesrep';
     final isSupervisor = role == 'supervisor';
-    // Customers tab is SalesRep-only
-    if (index == 5 && !isSalesRep) {
+    // Customers tab: SalesRep and Supervisor
+    if (index == 5 && !isSalesRep && !isSupervisor) {
       index = 0;
     }
     // Team map is supervisor-only
@@ -521,6 +521,7 @@ class _HomeViewState extends State<_HomeView> {
             .toLowerCase() ??
         '';
     final isSalesRep = role == 'salesrep';
+    final isSupervisor = role == 'supervisor';
     final pageTitle =
         _selectedIndex == 0
             ? l10n.dashboard
@@ -532,7 +533,7 @@ class _HomeViewState extends State<_HomeView> {
             ? l10n.targets
             : _selectedIndex == 4
             ? l10n.standaloneVisit
-            : (_selectedIndex == 5 && isSalesRep)
+            : (_selectedIndex == 5 && (isSalesRep || isSupervisor))
             ? l10n.customers
             : _selectedIndex == 6
             ? l10n.salesOrder

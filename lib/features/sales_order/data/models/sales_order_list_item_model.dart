@@ -20,6 +20,7 @@ class SalesOrderListItemModel {
     this.appSalesOrderId,
     this.uNetDue,
     this.uTotBonus,
+    this.uJovi,
   });
 
   /// Set when row comes from GET /api/Sales/orders (UUID). ERP detail uses [docEntry].
@@ -58,6 +59,9 @@ class SalesOrderListItemModel {
   /// Header total for lines with other `U_FREE` values (`U_TOT_BONUS`).
   final num? uTotBonus;
 
+  /// ERP user field `U_Jovi` from sales-order list/detail.
+  final String? uJovi;
+
   factory SalesOrderListItemModel.fromJson(Map<String, dynamic> json) {
     final linesRaw = json['lines'];
     final linesList =
@@ -88,7 +92,9 @@ class SalesOrderListItemModel {
       docTotal: (json['docTotal'] as num?)?.toDouble(),
       remarks: json['remarks'] as String?,
       documentStatus: json['documentStatus'] as String?,
-      uTrantjov: json['uTrantjov'] as String?,
+      uTrantjov: _optionalStringFromJson(
+        json['uTrantjov'] ?? json['U_Trantjov'] ?? json['U_TRANTJOV'],
+      ),
       warehouseCode: json['warehouseCode'] as String?,
       currency: _optionalStringFromJson(json['currency']),
       lines: linesList,
@@ -97,6 +103,7 @@ class SalesOrderListItemModel {
           (json['uNetDue'] as num?)?.toDouble(),
       uTotBonus: (json['U_TOT_BONUS'] as num?)?.toDouble() ??
           (json['uTotBonus'] as num?)?.toDouble(),
+      uJovi: _optionalStringFromJson(json['U_Jovi'] ?? json['uJovi']),
     );
   }
 

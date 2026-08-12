@@ -2,6 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sales_medical_app_mobile/core/network/api_http_exception.dart';
+import 'package:sales_medical_app_mobile/core/network/force_update_gate.dart';
+import 'package:sales_medical_app_mobile/core/network/force_update_info.dart';
+import 'package:sales_medical_app_mobile/core/utils/app_version.dart';
 
 class ApiService {
   /// Single API host for auth, master data, and ERP routes.
@@ -23,11 +26,13 @@ class ApiService {
 
   late final Dio _dio;
   static const String _tokenKey = 'auth_token';
+  static const String _appVersionHeader = 'X-App-Version';
 
   /// Fired once when the backend returns 401 on an authenticated request, so
   /// the app can silently log the user out and route back to login.
   VoidCallback? _onUnauthorized;
   bool _isHandling401 = false;
+  bool _isHandling426 = false;
 
   void setOnUnauthorized(VoidCallback? callback) {
     _onUnauthorized = callback;
@@ -44,24 +49,62 @@ class ApiService {
         path.contains('/api/auth/logout');
   }
 
+  /// GET `/api/auth/client-version` must not send `X-App-Version`.
+  static bool _isClientVersionPath(RequestOptions options) {
+    final path = options.uri.path.toLowerCase();
+    return path.contains('/api/auth/client-version');
+  }
+
+  static bool _isClientVersionError(DioException error) {
+    final status = error.response?.statusCode ?? 0;
+    if (status == 426) return true;
+    final data = error.response?.data;
+    if (data is Map) {
+      final code = data['error']?.toString() ?? '';
+      return code.startsWith('CLIENT_VERSION_');
+    }
+    return false;
+  }
+
   void _handleUnauthorized(RequestOptions options) {
     if (_isAuthPath(options) || _isHandling401) return;
     _isHandling401 = true;
     _onUnauthorized?.call();
   }
 
+  Future<void> _handleClientVersionOutdated(DioException error) async {
+    if (_isHandling426) return;
+    _isHandling426 = true;
+    try {
+      await clearToken();
+    } catch (_) {}
+    final info = ForceUpdateInfo.fromResponseData(
+      error.response?.data,
+      fallbackMessage: _errorMessageFromResponseData(error.response?.data),
+    );
+    ForceUpdateGate.show(info);
+  }
+
   void _initializeDio() {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          if (_isClientVersionPath(options)) {
+            options.headers.remove(_appVersionHeader);
+          } else {
+            options.headers[_appVersionHeader] =
+                await AppVersion.getApiVersion();
+          }
           final token = await _getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
           return handler.next(options);
         },
-        onError: (error, handler) {
-          if (error.response?.statusCode == 401) {
+        onError: (error, handler) async {
+          if (_isClientVersionError(error)) {
+            await _handleClientVersionOutdated(error);
+          } else if (error.response?.statusCode == 401) {
             _handleUnauthorized(error.requestOptions);
           }
           return handler.next(error);
@@ -79,7 +122,7 @@ class ApiService {
             options.headers['Access-Control-Allow-Methods'] =
                 'GET, POST, PUT, DELETE, OPTIONS';
             options.headers['Access-Control-Allow-Headers'] =
-                'Origin, Content-Type, Accept, Authorization, X-Requested-With';
+                'Origin, Content-Type, Accept, Authorization, X-Requested-With, X-App-Version';
 
             // For web, ensure we're using the right content type
             options.headers['Content-Type'] = 'application/json';
@@ -121,6 +164,21 @@ class ApiService {
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
+  }
+
+  /// GET `/api/Auth/client-version` — no auth; interceptor omits `X-App-Version`.
+  Future<Map<String, dynamic>?> getClientVersionPolicy() async {
+    try {
+      final response = await _dio.get<dynamic>('/api/Auth/client-version');
+      if (response.statusCode != 200) return null;
+      final data = response.data;
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return null;
+    } catch (_) {
+      // Soft-fail: do not block login if the policy endpoint is unreachable.
+      return null;
+    }
   }
 
   Future<Response<T>> post<T>(
@@ -268,6 +326,9 @@ class ApiService {
           'An error occurred';
       return m is String ? m : m.toString();
     }
+    if (responseData is Map) {
+      return _errorMessageFromResponseData(Map<String, dynamic>.from(responseData));
+    }
     if (responseData is String) {
       final text = responseData.trim();
       if (text.isNotEmpty) return text;
@@ -279,6 +340,14 @@ class ApiService {
     if (error.response != null) {
       final status = error.response!.statusCode ?? 0;
       final parsed = _errorMessageFromResponseData(error.response!.data);
+
+      if (_isClientVersionError(error)) {
+        return ApiHttpException(
+          statusCode: status == 0 ? 426 : status,
+          message: parsed,
+          isClientVersionOutdated: true,
+        );
+      }
 
       if (status == 401 && !_isAuthPath(error.requestOptions)) {
         return ApiHttpException(
