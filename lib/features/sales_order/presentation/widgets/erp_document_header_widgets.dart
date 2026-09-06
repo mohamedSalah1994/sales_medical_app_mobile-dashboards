@@ -526,19 +526,337 @@ class ErpListDocumentStatusPill extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: borderColor),
       ),
       child: Text(
         label,
         style: TextStyle(
           fontWeight: FontWeight.w700,
-          fontSize: 11,
+          fontSize: 10,
           color: fg,
-          letterSpacing: 0.2,
+          letterSpacing: 0.15,
+          height: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact doc-number badge for ERP list cards (`#107`).
+class ErpListDocNumberBadge extends StatelessWidget {
+  const ErpListDocNumberBadge({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontWeight: FontWeight.w700,
+          color: AppColors.primary,
+          fontSize: 11,
+          height: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+/// Customer / Lead type chip for compact list cards.
+class ErpListCardTypeBadge extends StatelessWidget {
+  const ErpListCardTypeBadge({
+    super.key,
+    required this.label,
+    required this.isLead,
+  });
+
+  final String label;
+  final bool isLead;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isLead ? AppColors.warning : AppColors.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+          letterSpacing: 0.15,
+          height: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+/// Outlined meta chip (e.g. Jovi) for compact ERP list cards.
+class ErpListMetaChip extends StatelessWidget {
+  const ErpListMetaChip({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+          height: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+/// Shared compact shell for sales-order / delivery / return / counting list cards.
+class ErpDocumentListCard extends StatelessWidget {
+  const ErpDocumentListCard({
+    super.key,
+    required this.onTap,
+    this.docBadgeLabel,
+    this.appIdBadgeText,
+    this.showAppIdHint = false,
+    this.docBesideLabel,
+    required this.title,
+    this.subtitle,
+    this.statusLabel,
+    this.trailingBadges = const [],
+    this.metaLeading = const [],
+    this.dateLabel,
+    this.totalLabel,
+    this.remarks,
+    this.extraFooter,
+  });
+
+  final VoidCallback onTap;
+  final String? docBadgeLabel;
+  final String? appIdBadgeText;
+  final bool showAppIdHint;
+  /// Shown immediately beside the doc number (e.g. sales-order `U_ST`).
+  final String? docBesideLabel;
+  final String title;
+  final String? subtitle;
+  final String? statusLabel;
+  final List<Widget> trailingBadges;
+  final List<Widget> metaLeading;
+  final String? dateLabel;
+  final String? totalLabel;
+  final String? remarks;
+  final Widget? extraFooter;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isNarrow = width < 360;
+    final titleSize = isNarrow ? 11.5 : 12.0;
+    final metaSize = isNarrow ? 10.5 : 11.0;
+    final gap = isNarrow ? 4.0 : 6.0;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isNarrow ? 10 : 12,
+            vertical: isNarrow ? 8 : 10,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Doc # left — status / type flags flush right
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (docBadgeLabel != null)
+                            ErpListDocNumberBadge(label: docBadgeLabel!)
+                          else if (appIdBadgeText != null) ...[
+                            ErpListDocNumberBadge(label: appIdBadgeText!),
+                            if (showAppIdHint)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: Text(
+                                  'App',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                          ],
+                          if (docBesideLabel != null &&
+                              docBesideLabel!.trim().isNotEmpty)
+                            ErpListMetaChip(label: docBesideLabel!.trim()),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if ((statusLabel != null && statusLabel!.isNotEmpty) ||
+                      trailingBadges.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 4,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (statusLabel != null && statusLabel!.isNotEmpty)
+                          ErpListDocumentStatusPill(label: statusLabel!),
+                        ...trailingBadges,
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+              SizedBox(height: gap),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: titleSize,
+                  color: AppColors.textPrimary,
+                  height: 1.2,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  style: TextStyle(
+                    fontSize: metaSize,
+                    color: AppColors.textSecondary,
+                    height: 1.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (metaLeading.isNotEmpty ||
+                  dateLabel != null ||
+                  totalLabel != null) ...[
+                SizedBox(height: gap),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          ...metaLeading,
+                          if (dateLabel != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  dateLabel!,
+                                  style: TextStyle(
+                                    fontSize: metaSize,
+                                    color: AppColors.textSecondary,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (totalLabel != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        totalLabel!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: metaSize,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+              if (extraFooter != null) ...[
+                SizedBox(height: gap),
+                extraFooter!,
+              ],
+              if (remarks != null && remarks!.trim().isNotEmpty) ...[
+                SizedBox(height: gap),
+                Text(
+                  remarks!,
+                  style: TextStyle(
+                    fontSize: metaSize - 0.5,
+                    color: AppColors.textSecondary,
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

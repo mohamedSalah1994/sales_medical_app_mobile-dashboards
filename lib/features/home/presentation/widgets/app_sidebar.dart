@@ -19,7 +19,7 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 280,
+      width: 250,
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -38,7 +38,7 @@ class AppSidebar extends StatelessWidget {
           // Menu Items
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
                 BlocBuilder<AuthCubit, AuthState>(
                   builder: (context, authState) {
@@ -86,22 +86,22 @@ class _SidebarHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: const AppLogo(
-              height: 40,
-              width: 40,
+              height: 32,
+              width: 32,
               fit: BoxFit.contain,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,7 +109,7 @@ class _SidebarHeader extends StatelessWidget {
                 Text(
                   'DKT Sales APP',
                   style: TextStyle(
-                    fontSize: 17,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
@@ -145,20 +145,20 @@ class _SidebarMenuItem extends StatelessWidget {
     final isSelected = index == selectedIndex;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color:
                   isSelected
                       ? AppColors.primary.withValues(alpha: 0.1)
                       : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               border:
                   isSelected
                       ? Border.all(
@@ -173,13 +173,13 @@ class _SidebarMenuItem extends StatelessWidget {
                   isSelected ? activeIcon : icon,
                   color:
                       isSelected ? AppColors.primary : AppColors.textSecondary,
-                  size: 22,
+                  size: 18,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 13.5,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     color:
                         isSelected ? AppColors.primary : AppColors.textPrimary,
@@ -204,22 +204,22 @@ class _SidebarFooter extends StatelessWidget {
         final email = user?.email ?? 'admin@dkt.com';
 
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Row(
             children: [
               CircleAvatar(
-                radius: 20,
+                radius: 16,
                 backgroundColor: AppColors.primary,
                 child: Text(
                   fullName.isNotEmpty ? fullName[0].toUpperCase() : 'A',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,7 +227,7 @@ class _SidebarFooter extends StatelessWidget {
                     Text(
                       fullName,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -236,7 +236,7 @@ class _SidebarFooter extends StatelessWidget {
                     Text(
                       email,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: AppColors.textSecondary,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -248,8 +248,9 @@ class _SidebarFooter extends StatelessWidget {
                 builder: (context) {
                   final l10n = AppLocalizations.of(context)!;
                   return IconButton(
-                    icon: const Icon(Icons.logout, size: 20),
+                    icon: const Icon(Icons.logout, size: 18),
                     color: AppColors.textSecondary,
+                    visualDensity: VisualDensity.compact,
                     onPressed: () async {
                       await context.read<AuthCubit>().logout();
                       if (context.mounted) {

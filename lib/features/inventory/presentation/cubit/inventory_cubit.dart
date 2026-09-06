@@ -14,6 +14,8 @@ class InventoryCubit extends Cubit<InventoryState> {
 
   final InventoryRepository _repository;
 
+  static const int kCountingsPageSize = 20;
+
   Future<void> loadWarehouses() async {
     emit(state.copyWith(isLoadingWarehouses: true, clearWarehousesError: true));
     try {
@@ -76,38 +78,65 @@ class InventoryCubit extends Cubit<InventoryState> {
 
   /// Loads `GET /api/erp/inventory-countings` for the given window. Stores the
   /// result in [InventoryState.countings] for the list page to render as cards.
+  /// [append]: next page (`skip` = current list length), `take` = [kCountingsPageSize].
   Future<void> loadCountings({
     DateTime? dateFrom,
     DateTime? dateTo,
     String? warehouseCode,
-    int skip = 0,
-    int take = 10,
+    bool append = false,
   }) async {
     final wh = warehouseCode?.trim();
-    emit(
-      state.copyWith(
-        isLoadingCountings: true,
-        clearCountingsError: true,
-        countingsWarehouseCode: wh,
-        clearCountingsWarehouseCode: wh == null || wh.isEmpty,
-      ),
-    );
+
+    if (append) {
+      if (!state.countingsHasMore ||
+          state.isLoadingMoreCountings ||
+          state.isLoadingCountings) {
+        return;
+      }
+      emit(state.copyWith(isLoadingMoreCountings: true));
+    } else {
+      emit(
+        state.copyWith(
+          isLoadingCountings: true,
+          clearCountingsError: true,
+          countingsHasMore: true,
+          countingsWarehouseCode: wh,
+          clearCountingsWarehouseCode: wh == null || wh.isEmpty,
+        ),
+      );
+    }
+
+    final skip = append ? state.countings.length : 0;
+
     try {
       final list = await _repository.getInventoryCountings(
         dateFrom: dateFrom,
         dateTo: dateTo,
         warehouseCode: wh,
         skip: skip,
-        take: take,
+        take: kCountingsPageSize,
       );
-      emit(state.copyWith(countings: list, isLoadingCountings: false));
-    } catch (e) {
+      final hasMore = list.length == kCountingsPageSize;
+      final merged = append ? [...state.countings, ...list] : list;
       emit(
         state.copyWith(
+          countings: merged,
           isLoadingCountings: false,
-          countingsError: e.toString().replaceFirst('Exception: ', ''),
+          isLoadingMoreCountings: false,
+          countingsHasMore: hasMore,
         ),
       );
+    } catch (e) {
+      if (append) {
+        emit(state.copyWith(isLoadingMoreCountings: false));
+      } else {
+        emit(
+          state.copyWith(
+            isLoadingCountings: false,
+            countingsError: e.toString().replaceFirst('Exception: ', ''),
+          ),
+        );
+      }
     }
   }
 

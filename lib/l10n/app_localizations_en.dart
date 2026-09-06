@@ -957,7 +957,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customersPhoneMobileInvalid =>
-      'Enter 11 digits after 2 (12 total)';
+      'Enter exactly 11 digits for mobile';
 
   @override
   String get customersPhoneLandLineInvalid =>
@@ -987,7 +987,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get customersPhone1Invalid =>
-      'Enter 11 digits after 2 (12 total, e.g. 01234567890)';
+      'Enter exactly 11 digits for mobile (e.g. 01234567890)';
 
   @override
   String get customersPhone2Invalid => 'Phone 2 must be at most 10 characters';

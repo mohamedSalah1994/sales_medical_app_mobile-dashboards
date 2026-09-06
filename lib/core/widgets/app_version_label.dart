@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:sales_medical_app_mobile/core/theme/app_colors.dart';
 import 'package:sales_medical_app_mobile/core/utils/app_version.dart';
 
-/// Shows the app version (e.g. "v1.0.0 (1)") read from the build metadata.
+/// Shows the app version (e.g. "v1.0.3 (1)") read from the build metadata.
 class AppVersionLabel extends StatefulWidget {
-  const AppVersionLabel({super.key, this.textAlign = TextAlign.center, this.style});
+  const AppVersionLabel({
+    super.key,
+    this.textAlign = TextAlign.center,
+    this.style,
+  });
 
   final TextAlign textAlign;
   final TextStyle? style;
@@ -33,7 +37,8 @@ class _AppVersionLabelState extends State<AppVersionLabel> {
     return Text(
       _version,
       textAlign: widget.textAlign,
-      style: widget.style ??
+      style:
+          widget.style ??
           const TextStyle(
             fontSize: 11,
             color: AppColors.textSecondary,

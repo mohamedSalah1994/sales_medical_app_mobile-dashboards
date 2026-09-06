@@ -65,7 +65,35 @@ class _CustomersPageState extends State<CustomersPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<CustomersCubit>().loadSeries();
+      _applyLockedAreaFromAuth();
+    });
+  }
+
+  /// Area from login `territoryId` (e.g. CAIRO); field stays locked when set.
+  MasterDataOptionModel? _lockedAreaFromAuth() {
+    final user = context.read<AuthCubit>().state.loginResponse?.user;
+    final id = user?.territoryId?.trim();
+    if (id == null || id.isEmpty) return null;
+    final name = user?.territoryName?.trim();
+    return MasterDataOptionModel(
+      code: id,
+      name: (name != null && name.isNotEmpty) ? name : id,
+    );
+  }
+
+  bool get _isAreaLocked => _lockedAreaFromAuth() != null;
+
+  void _applyLockedAreaFromAuth() {
+    final locked = _lockedAreaFromAuth();
+    if (locked == null) return;
+    setState(() {
+      _selectedArea = locked;
+      _selectedZone = null;
+      _selectedState = null;
+      _selectedCity = null;
+      _selectedRegion = null;
     });
   }
 
@@ -704,10 +732,15 @@ class _CustomersPageState extends State<CustomersPage> {
     if (!RegExp(r'^\d+$').hasMatch(text)) {
       return l10n.customersPhoneDigitsOnly;
     }
-    final maxLen =
-        kind == _CustomerPhoneLineKind.mobile ? 11 : 10;
-    if (text.length > maxLen) {
-      return l10n.customersPhoneMaxLengthInvalid(maxLen);
+    if (kind == _CustomerPhoneLineKind.mobile) {
+      if (text.length != 11) {
+        return l10n.customersPhoneMobileInvalid;
+      }
+      return null;
+    }
+    const landLineMax = 10;
+    if (text.length > landLineMax) {
+      return l10n.customersPhoneMaxLengthInvalid(landLineMax);
     }
     return null;
   }
@@ -938,10 +971,11 @@ class _CustomersPageState extends State<CustomersPage> {
   }
 
   void _clearForm() {
+    final lockedArea = _lockedAreaFromAuth();
     setState(() {
       _selectedSeries = null;
       _selectedChannelBPCustomer = null;
-      _selectedArea = null;
+      _selectedArea = lockedArea;
       _selectedZone = null;
       _selectedState = null;
       _selectedCity = null;
@@ -1424,11 +1458,12 @@ class _CustomersPageState extends State<CustomersPage> {
   }
 
   Widget _buildAreaPicker(AppLocalizations l10n) {
+    final locked = _isAreaLocked;
     return _buildMasterDataRow(
       label: l10n.customersFieldArea,
       placeholder: l10n.customersSelectArea,
       value: _selectedArea?.name,
-      enabled: true,
+      enabled: !locked,
       onTap: () => _showMasterDataDialog(
         section: MasterDataSection.areas,
         title: l10n.customersSelectAreaTitle,
@@ -1575,13 +1610,20 @@ class _CustomersPageState extends State<CustomersPage> {
           decoration: InputDecoration(
             labelText: label,
             border: const OutlineInputBorder(),
-            suffixIcon: const Icon(Icons.arrow_drop_down),
+            filled: !enabled,
+            fillColor: enabled ? null : AppColors.border.withValues(alpha: 0.35),
+            suffixIcon: Icon(
+              Icons.arrow_drop_down,
+              color: enabled ? null : AppColors.textSecondary,
+            ),
           ),
           child: Text(
             display,
             style: TextStyle(
               color:
-                  isPlaceholder
+                  !enabled
+                      ? AppColors.textSecondary
+                      : isPlaceholder
                       ? AppColors.textSecondary
                       : AppColors.textPrimary,
               fontSize: 16,
@@ -1750,7 +1792,7 @@ class _CustomersPageState extends State<CustomersPage> {
   }) {
     final isMobile = kind == _CustomerPhoneLineKind.mobile;
     final maxLength = isMobile ? 11 : 10;
-    final hint = '0123456789';
+    final hint = isMobile ? '01234567890' : '0123456789';
     final kindLabel =
         isMobile ? l10n.customersPhoneKindMobile : l10n.customersPhoneKindLandLine;
 

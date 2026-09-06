@@ -470,24 +470,26 @@ class GreetingBanner extends StatelessWidget {
               ],
             ),
           ),
-          Flexible(
-            child: Container(
+          const SizedBox(width: 8),
+          Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.calendar_today, color: Colors.white, size: 10),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(dateLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 10)),
-              ),
-            ]),
-          ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.calendar_today, color: Colors.white, size: 10),
+                const SizedBox(width: 4),
+                Text(
+                  dateLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 10),
+                ),
+              ],
+            ),
           ),
         ],
       ),

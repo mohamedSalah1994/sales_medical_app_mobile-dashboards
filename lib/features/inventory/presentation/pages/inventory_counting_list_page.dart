@@ -27,14 +27,18 @@ class InventoryCountingListPage extends StatefulWidget {
 
 class _InventoryCountingListPageState extends State<InventoryCountingListPage> {
   final _docEntryController = TextEditingController();
+  final _scrollController = ScrollController();
   bool _isSearching = false;
   String? _searchError;
   InventoryCountingDocModel? _searchResult;
   bool _listFetched = false;
 
+  late final VoidCallback _countingsScrollListener = _onCountingsScroll;
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_countingsScrollListener);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadCountings();
     });
@@ -42,8 +46,27 @@ class _InventoryCountingListPageState extends State<InventoryCountingListPage> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_countingsScrollListener);
+    _scrollController.dispose();
     _docEntryController.dispose();
     super.dispose();
+  }
+
+  void _onCountingsScroll() {
+    if (!mounted || _searchResult != null) return;
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final max = pos.maxScrollExtent;
+    if (max <= 0) return;
+    if (pos.pixels < max - 160) return;
+
+    final st = context.read<InventoryCubit>().state;
+    if (!st.countingsHasMore ||
+        st.isLoadingMoreCountings ||
+        st.isLoadingCountings) {
+      return;
+    }
+    _loadMoreCountings();
   }
 
   Future<String?> _resolveDefaultWarehouseCode() async {
@@ -63,10 +86,15 @@ class _InventoryCountingListPageState extends State<InventoryCountingListPage> {
     _listFetched = true;
     final wh = await _resolveDefaultWarehouseCode();
     if (!mounted) return;
+    await context.read<InventoryCubit>().loadCountings(warehouseCode: wh);
+  }
+
+  Future<void> _loadMoreCountings() async {
+    final wh = await _resolveDefaultWarehouseCode();
+    if (!mounted) return;
     await context.read<InventoryCubit>().loadCountings(
       warehouseCode: wh,
-      skip: 0,
-      take: 20,
+      append: true,
     );
   }
 
@@ -212,81 +240,96 @@ class _InventoryCountingListPageState extends State<InventoryCountingListPage> {
     );
   }
 
-  Widget _buildListSection(AppLocalizations l10n) {
-    return BlocBuilder<InventoryCubit, InventoryState>(
-      buildWhen:
-          (prev, curr) =>
-              prev.countings != curr.countings ||
-              prev.isLoadingCountings != curr.isLoadingCountings ||
-              prev.countingsError != curr.countingsError,
-      builder: (context, state) {
-        if (state.isLoadingCountings && state.countings.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (state.countingsError != null && state.countings.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  state.countingsError!,
-                  style: const TextStyle(fontSize: 12, color: AppColors.error),
-                ),
-                const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: _loadCountings,
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Retry'),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        if (state.countings.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.fact_check_outlined,
-                  size: 48,
-                  color: AppColors.textSecondary.withValues(alpha: 0.45),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.inventoryCountingListHint,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+  Widget _countingListSliver(InventoryState state, AppLocalizations l10n) {
+    if (state.isLoadingCountings && state.countings.isEmpty) {
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (state.countingsError != null && state.countings.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final doc in state.countings)
-                _InventoryCountingCard(
-                  doc: doc,
-                  onTap: () => _openCountingCard(doc),
+              Text(
+                state.countingsError!,
+                style: const TextStyle(fontSize: 12, color: AppColors.error),
+              ),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _loadCountings,
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Retry'),
                 ),
+              ),
             ],
           ),
-        );
-      },
+        ),
+      );
+    }
+    if (state.countings.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.fact_check_outlined,
+                size: 48,
+                color: AppColors.textSecondary.withValues(alpha: 0.45),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                l10n.inventoryCountingListHint,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    final footer = state.countingsHasMore ? 1 : 0;
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index >= state.countings.length) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child:
+                      state.isLoadingMoreCountings
+                          ? const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const SizedBox.shrink(),
+                ),
+              );
+            }
+            final doc = state.countings[index];
+            return _InventoryCountingCard(
+              doc: doc,
+              onTap: () => _openCountingCard(doc),
+            );
+          },
+          childCount: state.countings.length + footer,
+        ),
+      ),
     );
   }
 
@@ -302,9 +345,17 @@ class _InventoryCountingListPageState extends State<InventoryCountingListPage> {
       listener: (_, _) {
         if (mounted && _listFetched) _loadCountings();
       },
-      child: Builder(
-        builder: (context) {
+      child: BlocBuilder<InventoryCubit, InventoryState>(
+        buildWhen:
+            (prev, curr) =>
+                prev.countings != curr.countings ||
+                prev.isLoadingCountings != curr.isLoadingCountings ||
+                prev.isLoadingMoreCountings != curr.isLoadingMoreCountings ||
+                prev.countingsHasMore != curr.countingsHasMore ||
+                prev.countingsError != curr.countingsError,
+        builder: (context, state) {
           final listBody = CustomScrollView(
+            controller: _scrollController,
             slivers: [
               SliverToBoxAdapter(child: _buildSearchRow(l10n)),
               if (_searchResult != null)
@@ -323,7 +374,7 @@ class _InventoryCountingListPageState extends State<InventoryCountingListPage> {
                   ),
                 )
               else
-                SliverToBoxAdapter(child: _buildListSection(l10n)),
+                _countingListSliver(state, l10n),
             ],
           );
 
@@ -378,129 +429,35 @@ class _InventoryCountingCard extends StatelessWidget {
     final dateLabel = formatIsoDateLocal(doc.countDate);
     final lineCount = doc.lines.length;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (docBadgeLabel != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              docBadgeLabel,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              warehouseLabel,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 13,
-                                color: AppColors.textPrimary,
-                                height: 1.25,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ErpListDocumentStatusPill(label: statusLabel),
-                ],
+    return ErpDocumentListCard(
+      onTap: onTap,
+      docBadgeLabel: docBadgeLabel,
+      title: warehouseLabel,
+      statusLabel: statusLabel,
+      dateLabel: dateLabel.isEmpty ? '—' : dateLabel,
+      metaLeading: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.list_alt_outlined,
+              size: 12,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$lineCount line${lineCount == 1 ? '' : 's'}',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+                height: 1.2,
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 10,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        dateLabel.isEmpty ? '—' : dateLabel,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.list_alt_outlined,
-                        size: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$lineCount line${lineCount == 1 ? '' : 's'}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              if (doc.remarks != null && doc.remarks!.trim().isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  doc.remarks!.trim(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
-      ),
+      ],
+      remarks: doc.remarks,
     );
   }
 }
+

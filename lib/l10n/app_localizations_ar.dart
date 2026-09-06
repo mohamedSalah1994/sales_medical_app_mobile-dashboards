@@ -949,7 +949,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get customersPhoneKindLandLine => 'خط أرضي';
 
   @override
-  String get customersPhoneMobileInvalid => 'أدخل 11 رقماً بعد 2 (الإجمالي 12)';
+  String get customersPhoneMobileInvalid => 'أدخل 11 رقماً بالضبط للجوال';
 
   @override
   String get customersPhoneLandLineInvalid =>
@@ -979,7 +979,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get customersPhone1Invalid =>
-      'أدخل 11 رقماً بعد 2 (الإجمالي 12، مثال: 01234567890)';
+      'أدخل 11 رقماً بالضبط للجوال (مثال: 01234567890)';
 
   @override
   String get customersPhone2Invalid => 'يجب ألا يتجاوز هاتف 2 10 أحرف';

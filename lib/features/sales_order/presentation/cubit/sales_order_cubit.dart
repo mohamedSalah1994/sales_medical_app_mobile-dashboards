@@ -27,10 +27,12 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
   }) : super(const SalesOrderState());
 
   /// Page size for GET `/api/erp/deliveries` (skip increments on scroll).
-  static const int kDeliveriesPageSize = 10;
+  static const int kOrdersPageSize = 20;
+
+  static const int kDeliveriesPageSize = 20;
 
   /// Page size for GET `/api/erp/returns` (skip increments on scroll).
-  static const int kReturnsPageSize = 10;
+  static const int kReturnsPageSize = 20;
 
   /// Page size for GET `/api/MasterData/customers/odbc` (pageNumber increments on scroll).
   static const int kOdbcCustomersPageSize = 20;
@@ -38,6 +40,9 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
   final SalesOrderRepository repository;
   final AuthRepository authRepository;
   final GetCustomersUseCase getOdbcCustomersUseCase;
+
+  /// Ignores outdated GET /sales-orders/{docEntry} responses when switching docs quickly.
+  int _salesOrderSearchRequestId = 0;
 
   /// Last search sent to ODBC customers (null = no search filter).
   String? _lastOdbcCustomersSearch;
@@ -543,19 +548,36 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
   }
 
   /// Load sales orders from GET /api/erp/sales-orders (uses [state] order filters).
+  /// [append]: next page (`skip` = current list length), `take` = [kOrdersPageSize].
   Future<void> loadSalesOrdersList({
     String? visitId,
     int? salesEmployeeCode,
-    int pageNumber = 1,
-    int pageSize = 20,
+    bool append = false,
   }) async {
     final cc = state.ordersFilterCustomerCode?.trim();
     final customerCode = (cc != null && cc.isNotEmpty) ? cc : null;
     final dateFrom = _ordersDateFromIso(state.ordersFilterDateFrom);
     final dateTo = _ordersDateToIso(state.ordersFilterDateTo);
-    final skip = (pageNumber - 1) * pageSize;
 
-    emit(state.copyWith(isLoadingOrdersList: true, ordersListError: null));
+    if (append) {
+      if (!state.ordersListHasMore ||
+          state.isLoadingMoreOrdersList ||
+          state.isLoadingOrdersList) {
+        return;
+      }
+      emit(state.copyWith(isLoadingMoreOrdersList: true));
+    } else {
+      emit(
+        state.copyWith(
+          isLoadingOrdersList: true,
+          ordersListError: null,
+          ordersListHasMore: true,
+        ),
+      );
+    }
+
+    final skip = append ? state.ordersList.length : 0;
+
     try {
       final list = await repository.getSalesOrders(
         visitId: visitId,
@@ -564,22 +586,30 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
         dateTo: dateTo,
         salesEmployeeCode: salesEmployeeCode,
         skip: skip,
-        take: pageSize,
+        take: kOrdersPageSize,
       );
+      final hasMore = list.length == kOrdersPageSize;
+      final merged = append ? [...state.ordersList, ...list] : list;
       emit(
         state.copyWith(
-          ordersList: list,
+          ordersList: merged,
           isLoadingOrdersList: false,
+          isLoadingMoreOrdersList: false,
+          ordersListHasMore: hasMore,
           ordersListError: null,
         ),
       );
     } catch (e) {
-      emit(
-        state.copyWith(
-          isLoadingOrdersList: false,
-          ordersListError: e.toString().replaceFirst('Exception: ', ''),
-        ),
-      );
+      if (append) {
+        emit(state.copyWith(isLoadingMoreOrdersList: false));
+      } else {
+        emit(
+          state.copyWith(
+            isLoadingOrdersList: false,
+            ordersListError: e.toString().replaceFirst('Exception: ', ''),
+          ),
+        );
+      }
     }
   }
 
@@ -846,12 +876,23 @@ class SalesOrderCubit extends Cubit<SalesOrderState> {
   }
 
   Future<void> searchSalesOrders({required int docEntry}) async {
-    emit(state.copyWith(isLoadingSearch: true, searchError: null));
+    final requestId = ++_salesOrderSearchRequestId;
+    // Drop previous doc lines immediately so Qty fields cannot mount with stale values.
+    emit(
+      state.copyWith(
+        isLoadingSearch: true,
+        searchError: null,
+        clearFormData: true,
+        clearEditingDocNum: true,
+      ),
+    );
     try {
       final order = await repository.getSalesOrderByDocEntry(docEntry);
+      if (requestId != _salesOrderSearchRequestId) return;
       loadOrderForEdit(order);
       emit(state.copyWith(isLoadingSearch: false));
     } catch (e) {
+      if (requestId != _salesOrderSearchRequestId) return;
       emit(
         state.copyWith(
           isLoadingSearch: false,

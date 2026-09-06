@@ -26,7 +26,7 @@ class CustomersCubit extends Cubit<CustomersState> {
   final CreateErpCustomerUseCase createErpCustomerUseCase;
   final GetMasterDataOptionsUseCase getMasterDataOptionsUseCase;
 
-  static const int defaultPageSize = 10;
+  static const int defaultPageSize = 20;
 
   /// [append] false: replace list (initial/refresh/search). true: append next page.
   Future<void> getCustomers({

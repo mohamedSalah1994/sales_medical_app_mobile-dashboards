@@ -10,6 +10,8 @@ class InventoryState {
     this.submitError,
     this.countings = const [],
     this.isLoadingCountings = false,
+    this.isLoadingMoreCountings = false,
+    this.countingsHasMore = true,
     this.countingsError,
     this.countingsWarehouseCode,
   });
@@ -23,6 +25,8 @@ class InventoryState {
   /// Latest list of inventory counting documents from `GET /api/erp/inventory-countings`.
   final List<InventoryCountingDocModel> countings;
   final bool isLoadingCountings;
+  final bool isLoadingMoreCountings;
+  final bool countingsHasMore;
   final String? countingsError;
 
   /// Warehouse code used for the current [countings] load, so the list page can
@@ -39,6 +43,8 @@ class InventoryState {
     bool clearWarehousesError = false,
     List<InventoryCountingDocModel>? countings,
     bool? isLoadingCountings,
+    bool? isLoadingMoreCountings,
+    bool? countingsHasMore,
     String? countingsError,
     bool clearCountingsError = false,
     String? countingsWarehouseCode,
@@ -55,6 +61,9 @@ class InventoryState {
       submitError: clearSubmitError ? null : (submitError ?? this.submitError),
       countings: countings ?? this.countings,
       isLoadingCountings: isLoadingCountings ?? this.isLoadingCountings,
+      isLoadingMoreCountings:
+          isLoadingMoreCountings ?? this.isLoadingMoreCountings,
+      countingsHasMore: countingsHasMore ?? this.countingsHasMore,
       countingsError:
           clearCountingsError ? null : (countingsError ?? this.countingsError),
       countingsWarehouseCode:

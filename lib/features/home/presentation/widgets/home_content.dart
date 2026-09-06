@@ -191,8 +191,6 @@ class _HomeContentState extends State<HomeContent> {
         final wh = authState.loginResponse?.user.defaultWarehouseCode?.trim();
         inventoryCubit.loadCountings(
           warehouseCode: (wh == null || wh.isEmpty) ? null : wh,
-          skip: 0,
-          take: 20,
         );
         break;
       case 11:

@@ -29,8 +29,8 @@ class UserModel extends User {
               ?.map((e) => e as String)
               .toList() ??
           [],
-      territoryId: parseOptionalInt(json['territoryId']),
-      territoryName: json['territoryName'] as String?,
+      territoryId: parseOptionalString(json['territoryId']),
+      territoryName: parseOptionalString(json['territoryName']),
       supervisorId: json['supervisorId'] as String?,
       supervisorName: json['supervisorName'] as String?,
       sapSalesEmployeeCode: json['sapSalesEmployeeCode'] as int?,

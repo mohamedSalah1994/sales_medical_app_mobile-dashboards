@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -132,22 +134,64 @@ class ApiService {
       );
     }
 
-    // Add logging in debug mode (errors: ApiService logs structured lines in _logError).
+    // Pretty JSON request/response logging in debug (errors also via _logError).
     if (kDebugMode) {
       _dio.interceptors.add(
-        LogInterceptor(
-          requestBody: true,
-          responseBody: true,
-          requestHeader: true,
-          responseHeader: false,
-          error: false,
-          logPrint: (object) {
-            if (kDebugMode) {
-              debugPrint('$object');
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            debugPrint('→ ${options.method} ${options.uri}');
+            if (options.queryParameters.isNotEmpty) {
+              _debugPrintPrettyJson('  query', options.queryParameters);
             }
+            if (options.data != null) {
+              _debugPrintPrettyJson('  request body', options.data);
+            }
+            return handler.next(options);
+          },
+          onResponse: (response, handler) {
+            debugPrint(
+              '← ${response.statusCode} ${response.requestOptions.uri}',
+            );
+            _debugPrintPrettyJson('  response body', response.data);
+            return handler.next(response);
           },
         ),
       );
+    }
+  }
+
+  /// Prints [data] as indented JSON when possible (debug only).
+  static void _debugPrintPrettyJson(String label, dynamic data) {
+    if (!kDebugMode) return;
+    final pretty = _tryEncodePretty(data);
+    if (pretty == null) {
+      debugPrint('$label: $data');
+      return;
+    }
+    debugPrint(label);
+    for (final line in pretty.split('\n')) {
+      debugPrint(line);
+    }
+  }
+
+  static String? _tryEncodePretty(dynamic data) {
+    try {
+      if (data == null) return null;
+      if (data is FormData) {
+        return null;
+      }
+      if (data is String) {
+        final trimmed = data.trim();
+        if (trimmed.isEmpty) return null;
+        if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+            (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+          return const JsonEncoder.withIndent('  ').convert(jsonDecode(trimmed));
+        }
+        return null;
+      }
+      return const JsonEncoder.withIndent('  ').convert(data);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -296,7 +340,7 @@ class ApiService {
       final status = res.statusCode ?? 0;
       final parsed = _errorMessageFromResponseData(res.data);
       debugPrint('│ status: $status');
-      debugPrint('│ response: ${res.data}');
+      _debugPrintPrettyJson('│ response', res.data);
       debugPrint('│ throws: ApiHttpException($status, "$parsed")');
     } else {
       debugPrint('│ throws: ${e.type} (no response body)');

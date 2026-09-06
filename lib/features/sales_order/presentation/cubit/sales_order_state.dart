@@ -35,6 +35,8 @@ class SalesOrderState extends Equatable {
     this.searchError,
     this.ordersList = const [],
     this.isLoadingOrdersList = false,
+    this.isLoadingMoreOrdersList = false,
+    this.ordersListHasMore = true,
     this.ordersListError,
     this.deliveriesList = const [],
     this.isLoadingDeliveriesList = false,
@@ -92,11 +94,13 @@ class SalesOrderState extends Equatable {
   final String? searchError;
   final List<SalesOrderListItemModel> ordersList;
   final bool isLoadingOrdersList;
+  final bool isLoadingMoreOrdersList;
+  final bool ordersListHasMore;
   final String? ordersListError;
   final List<SalesOrderListItemModel> deliveriesList;
   final bool isLoadingDeliveriesList;
   final bool isLoadingMoreDeliveriesList;
-  /// False once a page returned fewer items than the deliveries page size (10).
+  /// False once a page returned fewer items than the deliveries page size (20).
   final bool deliveriesListHasMore;
   final String? deliveriesListError;
 
@@ -175,6 +179,8 @@ class SalesOrderState extends Equatable {
     String? searchError,
     List<SalesOrderListItemModel>? ordersList,
     bool? isLoadingOrdersList,
+    bool? isLoadingMoreOrdersList,
+    bool? ordersListHasMore,
     String? ordersListError,
     List<SalesOrderListItemModel>? deliveriesList,
     bool? isLoadingDeliveriesList,
@@ -249,6 +255,9 @@ class SalesOrderState extends Equatable {
       searchError: searchError ?? this.searchError,
       ordersList: ordersList ?? this.ordersList,
       isLoadingOrdersList: isLoadingOrdersList ?? this.isLoadingOrdersList,
+      isLoadingMoreOrdersList:
+          isLoadingMoreOrdersList ?? this.isLoadingMoreOrdersList,
+      ordersListHasMore: ordersListHasMore ?? this.ordersListHasMore,
       ordersListError: ordersListError ?? this.ordersListError,
       deliveriesList: deliveriesList ?? this.deliveriesList,
       isLoadingDeliveriesList:
@@ -361,6 +370,8 @@ class SalesOrderState extends Equatable {
     searchError,
     ordersList,
     isLoadingOrdersList,
+    isLoadingMoreOrdersList,
+    ordersListHasMore,
     ordersListError,
     deliveriesList,
     isLoadingDeliveriesList,

@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:sales_medical_app_mobile/core/theme/app_colors.dart';
 import 'package:sales_medical_app_mobile/core/utils/odbc_card_type_label.dart';
-import 'package:sales_medical_app_mobile/core/utils/van_sales.dart';
 import 'package:sales_medical_app_mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/sales_order_list_item_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/presentation/cubit/sales_order_cubit.dart';
@@ -25,13 +24,17 @@ class SalesOrderListPage extends StatefulWidget {
 
 class _SalesOrderListPageState extends State<SalesOrderListPage> {
   final _docEntryController = TextEditingController();
+  final _scrollController = ScrollController();
   bool _showSearchBar = false;
   bool _isSearching = false;
   String? _searchError;
 
+  late final VoidCallback _ordersScrollListener = _onOrdersScroll;
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_ordersScrollListener);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _ensureCustomersForFilters();
       _loadOrders();
@@ -40,8 +43,39 @@ class _SalesOrderListPageState extends State<SalesOrderListPage> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_ordersScrollListener);
+    _scrollController.dispose();
     _docEntryController.dispose();
     super.dispose();
+  }
+
+  void _onOrdersScroll() {
+    if (!mounted) return;
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final max = pos.maxScrollExtent;
+    if (max <= 0) return;
+    if (pos.pixels < max - 160) return;
+
+    final cubit = context.read<SalesOrderCubit>();
+    final st = cubit.state;
+    if (!st.ordersListHasMore ||
+        st.isLoadingMoreOrdersList ||
+        st.isLoadingOrdersList) {
+      return;
+    }
+    final sap =
+        context
+            .read<AuthCubit>()
+            .state
+            .loginResponse
+            ?.user
+            .sapSalesEmployeeCode;
+    cubit.loadSalesOrdersList(
+      visitId: widget.visitId,
+      salesEmployeeCode: sap,
+      append: true,
+    );
   }
 
   void _ensureCustomersForFilters() {
@@ -256,6 +290,8 @@ class _SalesOrderListPageState extends State<SalesOrderListPage> {
           (p, c) =>
               p.ordersList != c.ordersList ||
               p.isLoadingOrdersList != c.isLoadingOrdersList ||
+              p.isLoadingMoreOrdersList != c.isLoadingMoreOrdersList ||
+              p.ordersListHasMore != c.ordersListHasMore ||
               p.ordersListError != c.ordersListError ||
               p.hasActiveOrdersFilters != c.hasActiveOrdersFilters,
       builder: (context, state) {
@@ -295,31 +331,40 @@ class _SalesOrderListPageState extends State<SalesOrderListPage> {
             ),
           );
         } else {
+          final list = state.ordersList;
+          final footer = state.ordersListHasMore ? 1 : 0;
           body = RefreshIndicator(
             onRefresh: () async => _loadOrders(),
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(12),
-              itemCount: state.ordersList.length,
+              itemCount: list.length + footer,
               itemBuilder: (context, index) {
-                final order = state.ordersList[index];
+                if (index >= list.length) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child:
+                          state.isLoadingMoreOrdersList
+                              ? const SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : const SizedBox.shrink(),
+                    ),
+                  );
+                }
+                final order = list[index];
                 return _OrderCard(order: order, onTap: () => _openOrder(order));
               },
             ),
           );
         }
 
-        return Stack(
-          children: [
-            Positioned.fill(child: body),
-            if (state.isLoadingOrdersList && state.ordersList.isNotEmpty)
-              const Positioned.fill(
-                child: ColoredBox(
-                  color: Color(0x33000000),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              ),
-          ],
-        );
+        return body;
       },
     );
 
@@ -411,8 +456,6 @@ class _OrderCard extends StatelessWidget {
     );
     final id = order.appSalesOrderId;
     final statusLabel = erpDocumentStatusShortLabel(order.documentStatus);
-    final saleTypeLabel = salesTypeLabel(order.uTrantjov);
-    final isVanSales = isVanSalesYes(order.uTrantjov);
     final cardTypeLabel = () {
       final fromName = order.cardTypeName?.trim() ?? '';
       if (fromName.isNotEmpty) return fromName;
@@ -438,292 +481,35 @@ class _OrderCard extends StatelessWidget {
               decimalDigits: 2,
             ).format(order.docTotal)
             : '—';
+    final jovi = (order.uJovi ?? '').trim();
+    final uSt = (order.uSt ?? '').trim();
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (docBadgeLabel != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              docBadgeLabel,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ] else if (appIdBadgeText != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              appIdBadgeText,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.textSecondary.withValues(
-                                alpha: 0.12,
-                              ),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'App',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  order.customerName ?? '—',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13,
-                                    color: AppColors.textPrimary,
-                                    height: 1.25,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                if (order.distinctCustomerForeignName !=
-                                    null) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    order.distinctCustomerForeignName!,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                      height: 1.25,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      ErpListDocumentStatusPill(label: statusLabel),
-                      if (cardTypeLabel.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        _OrderCardTypeBadge(
-                          label: cardTypeLabel,
-                          isLead: isLead,
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 6,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                isVanSales
-                                    ? AppColors.primary.withValues(alpha: 0.10)
-                                    : AppColors.textSecondary.withValues(
-                                      alpha: 0.10,
-                                    ),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color:
-                                  isVanSales
-                                      ? AppColors.primary.withValues(
-                                        alpha: 0.30,
-                                      )
-                                      : AppColors.textSecondary.withValues(
-                                        alpha: 0.25,
-                                      ),
-                            ),
-                          ),
-                          child: Text(
-                            saleTypeLabel,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color:
-                                  isVanSales
-                                      ? AppColors.primary
-                                      : AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        if ((order.uJovi ?? '').trim().isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: Text(
-                              'Jovi: ${order.uJovi!.trim()}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.calendar_today,
-                              size: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              docDate,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      'Total: $total',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (order.remarks != null &&
-                  order.remarks!.trim().isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  order.remarks!,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ],
-          ),
+    return ErpDocumentListCard(
+      onTap: onTap,
+      docBadgeLabel: docBadgeLabel,
+      appIdBadgeText: docBadgeLabel == null ? appIdBadgeText : null,
+      showAppIdHint: docBadgeLabel == null && appIdBadgeText != null,
+      title: order.customerName ?? '—',
+      subtitle: order.distinctCustomerForeignName,
+      statusLabel: statusLabel,
+      trailingBadges:
+          cardTypeLabel.isNotEmpty
+              ? [
+                ErpListCardTypeBadge(label: cardTypeLabel, isLead: isLead),
+              ]
+              : const [],
+      metaLeading: [
+        ErpListMetaChip(
+          label: 'Ship No.: ${jovi.isNotEmpty ? jovi : '—'}',
         ),
-      ),
+        ErpListMetaChip(
+          label: 'Ship Status: ${uSt.isNotEmpty ? uSt : '—'}',
+        ),
+      ],
+      dateLabel: docDate,
+      totalLabel: 'Total: $total',
+      remarks: order.remarks,
     );
   }
 }
 
-/// Customer / Lead chip mirrored from the customers list cards.
-class _OrderCardTypeBadge extends StatelessWidget {
-  const _OrderCardTypeBadge({required this.label, required this.isLead});
-
-  final String label;
-  final bool isLead;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isLead ? AppColors.warning : AppColors.primary;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: color,
-          letterSpacing: 0.2,
-        ),
-      ),
-    );
-  }
-}

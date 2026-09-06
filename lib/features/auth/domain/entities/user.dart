@@ -22,7 +22,8 @@ class User extends Equatable {
   final String email;
   final String role;
   final List<String> subRoles;
-  final int? territoryId;
+  /// Login `territoryId` (e.g. `"CAIRO"`); used as default Area on create customer.
+  final String? territoryId;
   final String? territoryName;
   final String? supervisorId;
   final String? supervisorName;

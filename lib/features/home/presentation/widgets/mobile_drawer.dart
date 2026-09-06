@@ -35,7 +35,7 @@ class MobileDrawer extends StatelessWidget {
                 final isSupervisor = role == 'supervisor';
 
                 return ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
                     _DrawerMenuItem(
                       icon: Icons.dashboard_outlined,
@@ -197,7 +197,7 @@ class _DrawerHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 56, 24, 24),
+      padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -208,18 +208,18 @@ class _DrawerHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(7),
             ),
             child: const AppLogo(
-              height: 44,
-              width: 44,
+              height: 34,
+              width: 34,
               fallbackIconColor: Colors.white,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,7 +227,7 @@ class _DrawerHeader extends StatelessWidget {
                 Text(
                   'DKT Sales APP',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -263,15 +263,19 @@ class _DrawerMenuItem extends StatelessWidget {
     final isSelected = index == selectedIndex;
 
     return ListTile(
+      dense: true,
+      visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      minLeadingWidth: 28,
       leading: Icon(
         isSelected ? activeIcon : icon,
         color: isSelected ? AppColors.primary : AppColors.textSecondary,
-        size: 24,
+        size: 20,
       ),
       title: Text(
         title,
         style: TextStyle(
-          fontSize: 16,
+          fontSize: 13.5,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           color: isSelected ? AppColors.primary : AppColors.textPrimary,
         ),
@@ -295,24 +299,24 @@ class _DrawerFooter extends StatelessWidget {
         return SafeArea(
           top: false,
           child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           child: Column(
             children: [
               Row(
                 children: [
                   CircleAvatar(
-                    radius: 24,
+                    radius: 18,
                     backgroundColor: AppColors.primary,
                     child: Text(
                       fullName.isNotEmpty ? fullName[0].toUpperCase() : 'A',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,7 +324,7 @@ class _DrawerFooter extends StatelessWidget {
                         Text(
                           fullName,
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
@@ -329,7 +333,7 @@ class _DrawerFooter extends StatelessWidget {
                         Text(
                           email,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             color: AppColors.textSecondary,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -339,7 +343,7 @@ class _DrawerFooter extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Builder(
                 builder: (context) {
                   final l10n = AppLocalizations.of(context)!;
@@ -352,18 +356,22 @@ class _DrawerFooter extends StatelessWidget {
                           Navigator.of(context).pushReplacementNamed('/login');
                         }
                       },
-                      icon: const Icon(Icons.logout, size: 18),
-                      label: Text(l10n.logout),
+                      icon: const Icon(Icons.logout, size: 16),
+                      label: Text(
+                        l10n.logout,
+                        style: const TextStyle(fontSize: 13),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
                         side: const BorderSide(color: AppColors.error),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        visualDensity: VisualDensity.compact,
                       ),
                     ),
                   );
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               const AppVersionLabel(),
             ],
           ),

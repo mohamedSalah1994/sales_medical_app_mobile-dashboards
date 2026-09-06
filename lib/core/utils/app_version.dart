@@ -8,8 +8,8 @@ class AppVersion {
   AppVersion._();
 
   /// Fallback when package info is unavailable. Keep in sync with `version:` in pubspec.
-  static const String fallbackApi = '1.0.0';
-  static const String fallbackDisplay = 'v1.0.0';
+  static const String fallbackApi = '1.0.3';
+  static const String fallbackDisplay = 'v1.0.3';
 
   static String? _apiCached;
   static String? _displayCached;
@@ -21,8 +21,7 @@ class AppVersion {
       final info = await PackageInfo.fromPlatform();
       final version = info.version.trim();
       final build = info.buildNumber.trim();
-      _apiCached =
-          build.isEmpty ? version : '$version+$build';
+      _apiCached = build.isEmpty ? version : '$version+$build';
       _displayCached = 'v$version ($build)';
     } catch (_) {
       _apiCached = fallbackApi;

@@ -21,6 +21,7 @@ class SalesOrderListItemModel {
     this.uNetDue,
     this.uTotBonus,
     this.uJovi,
+    this.uSt,
   });
 
   /// Set when row comes from GET /api/Sales/orders (UUID). ERP detail uses [docEntry].
@@ -61,6 +62,9 @@ class SalesOrderListItemModel {
 
   /// ERP user field `U_Jovi` from sales-order list/detail.
   final String? uJovi;
+
+  /// ERP user field `U_ST` from sales-order list/detail (shown on list card).
+  final String? uSt;
 
   factory SalesOrderListItemModel.fromJson(Map<String, dynamic> json) {
     final linesRaw = json['lines'];
@@ -104,6 +108,7 @@ class SalesOrderListItemModel {
       uTotBonus: (json['U_TOT_BONUS'] as num?)?.toDouble() ??
           (json['uTotBonus'] as num?)?.toDouble(),
       uJovi: _optionalStringFromJson(json['U_Jovi'] ?? json['uJovi']),
+      uSt: _optionalStringFromJson(json['U_ST'] ?? json['uSt'] ?? json['U_St']),
     );
   }
 

@@ -53,20 +53,20 @@ class _SalesOrderPageState extends State<SalesOrderPage> {
   final _remarksController = TextEditingController();
   final _itemSearchController = TextEditingController();
   Timer? _customerPickerSearchDebounce;
+  SalesOrderCubit? _cubit;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final cubit = context.read<SalesOrderCubit>();
+      _cubit = cubit;
       if (widget.initialDocEntry == null) {
         cubit.resetFormForNewEntry();
       } else {
-        final docEntry = widget.initialDocEntry!;
-        final alreadyLoaded = cubit.state.editingDocNum == docEntry;
-        if (!alreadyLoaded) {
-          cubit.searchSalesOrders(docEntry: docEntry);
-        }
+        // Always reload so Qty fields never keep a previous document's values.
+        cubit.searchSalesOrders(docEntry: widget.initialDocEntry!);
       }
       cubit.loadVatCodes();
       cubit.loadFreeGoodsList();
@@ -90,8 +90,18 @@ class _SalesOrderPageState extends State<SalesOrderPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _cubit ??= context.read<SalesOrderCubit>();
+  }
+
+  @override
   void dispose() {
     _customerPickerSearchDebounce?.cancel();
+    // Shared cubit: clear edit snapshot so the next open cannot show stale lines.
+    if (widget.initialDocEntry != null) {
+      _cubit?.clearEditMode();
+    }
     _remarksController.dispose();
     _itemSearchController.dispose();
     super.dispose();
@@ -1098,6 +1108,9 @@ class _SalesOrderPageState extends State<SalesOrderPage> {
                   ),
                   _BodyCell(
                     TextFormField(
+                      key: ValueKey(
+                        'so-qty-${state.editingDocNum ?? 'new'}-$i-${line.itemCode ?? ''}',
+                      ),
                       initialValue: line.quantity.toString(),
                       style: tableTextStyle,
                       keyboardType: const TextInputType.numberWithOptions(

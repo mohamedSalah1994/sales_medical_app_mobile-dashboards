@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sales_medical_app_mobile/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:sales_medical_app_mobile/core/theme/app_colors.dart';
-import 'package:sales_medical_app_mobile/core/utils/van_sales.dart';
 import 'package:sales_medical_app_mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/data/models/sales_order_list_item_model.dart';
 import 'package:sales_medical_app_mobile/features/sales_order/presentation/cubit/sales_order_cubit.dart';
@@ -375,7 +374,7 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
   }
 }
 
-/// Delivery row: doc **entry**, customer; **status** top-right (Open/Close styling on pill only).
+/// Delivery row: doc number + status on one line; compact meta row.
 class _DeliveryListCard extends StatelessWidget {
   const _DeliveryListCard({required this.order, required this.onTap});
 
@@ -389,8 +388,6 @@ class _DeliveryListCard extends StatelessWidget {
       order.docEntry,
     );
     final statusLabel = erpDocumentStatusShortLabel(order.documentStatus);
-    final saleTypeLabel = salesTypeLabel(order.uTrantjov);
-    final isVanSales = isVanSalesYes(order.uTrantjov);
     final docDate =
         order.docDate != null
             ? (() {
@@ -405,207 +402,43 @@ class _DeliveryListCard extends StatelessWidget {
               decimalDigits: 2,
             ).format(order.docTotal)
             : '—';
+    final warehouse = order.warehouseCode?.trim();
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return ErpDocumentListCard(
+      onTap: onTap,
+      docBadgeLabel: docBadgeLabel,
+      title: order.customerName ?? '—',
+      subtitle: order.distinctCustomerForeignName,
+      statusLabel: statusLabel,
+      dateLabel: docDate,
+      totalLabel: 'Total: $total',
+      remarks: order.remarks,
+      extraFooter:
+          warehouse != null && warehouse.isNotEmpty
+              ? Row(
                 children: [
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (docBadgeLabel != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              docBadgeLabel,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  order.customerName ?? '—',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13,
-                                    color: AppColors.textPrimary,
-                                    height: 1.25,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                if (order.distinctCustomerForeignName !=
-                                    null) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    order.distinctCustomerForeignName!,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                      height: 1.25,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ErpListDocumentStatusPill(label: statusLabel),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 6,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                isVanSales
-                                    ? AppColors.primary.withValues(alpha: 0.10)
-                                    : AppColors.textSecondary.withValues(
-                                      alpha: 0.10,
-                                    ),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color:
-                                  isVanSales
-                                      ? AppColors.primary.withValues(
-                                        alpha: 0.30,
-                                      )
-                                      : AppColors.textSecondary.withValues(
-                                        alpha: 0.25,
-                                      ),
-                            ),
-                          ),
-                          child: Text(
-                            saleTypeLabel,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color:
-                                  isVanSales
-                                      ? AppColors.primary
-                                      : AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.calendar_today,
-                              size: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              docDate,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    'Total: $total',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              if (order.warehouseCode != null &&
-                  order.warehouseCode!.trim().isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.warehouse_outlined,
-                      size: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        order.warehouseCode!.trim(),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              if (order.remarks != null &&
-                  order.remarks!.trim().isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  order.remarks!,
-                  style: TextStyle(
-                    fontSize: 12,
+                  Icon(
+                    Icons.warehouse_outlined,
+                    size: 12,
                     color: AppColors.textSecondary,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      warehouse,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              )
+              : null,
     );
   }
 }
+

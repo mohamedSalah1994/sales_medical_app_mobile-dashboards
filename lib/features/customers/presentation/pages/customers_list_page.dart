@@ -11,6 +11,7 @@ import 'package:sales_medical_app_mobile/features/customers/domain/entities/cust
 import 'package:sales_medical_app_mobile/features/customers/presentation/cubit/customers_cubit.dart';
 import 'package:sales_medical_app_mobile/features/customers/presentation/pages/customer_detail_page.dart';
 import 'package:sales_medical_app_mobile/features/customers/presentation/pages/customers_page.dart';
+import 'package:sales_medical_app_mobile/features/sales_order/presentation/widgets/erp_document_header_widgets.dart';
 
 /// Customers tab content: list of customer cards and FAB to create a new customer.
 class CustomersListPage extends StatefulWidget {
@@ -26,7 +27,7 @@ class _CustomersListPageState extends State<CustomersListPage> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   Timer? _searchDebounce;
-  static const int _pageSize = 10;
+  static const int _pageSize = 20;
 
   @override
   void initState() {
@@ -340,24 +341,29 @@ class _CustomerCard extends StatelessWidget {
     final cardTypeLabel = odbcCardTypeKindLabel(customer.cardType);
     final isLead = isOdbcLeadCardType(customer.cardType);
     final locationText = customer.locationDisplayText;
+    final isNarrow = MediaQuery.sizeOf(context).width < 360;
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0.5,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         side: const BorderSide(color: AppColors.border, width: 1),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.symmetric(
+            horizontal: isNarrow ? 10 : 12,
+            vertical: isNarrow ? 8 : 10,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   CircleAvatar(
+                    radius: 16,
                     backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                     child: Text(
                       displayName.isNotEmpty
@@ -366,61 +372,69 @@ class _CustomerCard extends StatelessWidget {
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          displayName.isNotEmpty
-                              ? displayName
-                              : '—',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
+                          displayName.isNotEmpty ? displayName : '—',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: isNarrow ? 12.5 : 13,
+                            color: AppColors.textPrimary,
+                            height: 1.2,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         if (secondaryName != null) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             secondaryName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 13,
-                              height: 1.25,
+                              fontSize: isNarrow ? 11 : 11.5,
+                              height: 1.2,
                             ),
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
                         const SizedBox(height: 2),
                         Text(
                           customer.customerCode,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 13,
+                            fontSize: isNarrow ? 11 : 11.5,
+                            height: 1.2,
                           ),
                         ),
                       ],
                     ),
                   ),
                   if (cardTypeLabel.isNotEmpty) ...[
-                    const SizedBox(width: 8),
-                    _CardTypeBadge(label: cardTypeLabel, isLead: isLead),
+                    const SizedBox(width: 6),
+                    ErpListCardTypeBadge(label: cardTypeLabel, isLead: isLead),
                   ],
-                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
                 ],
               ),
               if (locationText != null ||
                   customer.city.isNotEmpty ||
                   customer.phone.isNotEmpty ||
                   customer.address.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                const Divider(height: 1),
                 const SizedBox(height: 8),
+                const Divider(height: 1),
+                const SizedBox(height: 6),
                 if (locationText != null)
                   _DetailRow(
                     icon: Icons.pin_drop_outlined,
@@ -450,35 +464,6 @@ class _CustomerCard extends StatelessWidget {
   }
 }
 
-class _CardTypeBadge extends StatelessWidget {
-  const _CardTypeBadge({required this.label, required this.isLead});
-
-  final String label;
-  final bool isLead;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isLead ? AppColors.warning : AppColors.primary;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: color,
-          letterSpacing: 0.2,
-        ),
-      ),
-    );
-  }
-}
-
 class _DetailRow extends StatelessWidget {
   const _DetailRow({required this.icon, required this.label});
 
@@ -488,18 +473,19 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 3),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: AppColors.textSecondary),
-          const SizedBox(width: 8),
+          Icon(icon, size: 14, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
               label,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 11.5,
                 color: AppColors.textSecondary,
+                height: 1.2,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
