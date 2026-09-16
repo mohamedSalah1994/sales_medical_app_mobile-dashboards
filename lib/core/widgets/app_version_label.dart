@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sales_medical_app_mobile/core/theme/app_colors.dart';
 import 'package:sales_medical_app_mobile/core/utils/app_version.dart';
 
-/// Shows the app version (e.g. "v1.0.3 (1)") read from the build metadata.
+/// Shows the app version (e.g. "v1.0.4 (1)") read from the build metadata.
 class AppVersionLabel extends StatefulWidget {
   const AppVersionLabel({
     super.key,

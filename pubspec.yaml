@@ -2,7 +2,7 @@ name: sales_medical_app_mobile
 description: "DKT Sales APP"
 publish_to: 'none'
 
-version: 1.0.3+2
+version: 1.0.4+4
 
 environment:
   sdk: ^3.7.2

@@ -8,8 +8,8 @@ class AppVersion {
   AppVersion._();
 
   /// Fallback when package info is unavailable. Keep in sync with `version:` in pubspec.
-  static const String fallbackApi = '1.0.3';
-  static const String fallbackDisplay = 'v1.0.3';
+  static const String fallbackApi = '1.0.4';
+  static const String fallbackDisplay = 'v1.0.4';
 
   static String? _apiCached;
   static String? _displayCached;

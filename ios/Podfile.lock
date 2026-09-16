@@ -1,7 +1,7 @@
 PODS:
   - connectivity_plus (0.0.1):
     - Flutter
-  - Flutter (1.0.3)
+  - Flutter (1.0.4)
   - geocoding_ios (1.0.5):
     - Flutter
   - geolocator_apple (1.2.0):
